@@ -29,5 +29,5 @@ Full documentation, including examples, can be found at
 ## Caveats
 
 These bindings are not necessarily complete; there may be some features
-present in [`boolector-sys`] which are not exposed here, e.g., uninterpreted
-functions (`boolector_uf()`). Contributions are welcome.
+present in [`boolector-sys`] which are not directly exposed here, e.g.,
+uninterpreted functions (`boolector_uf()`). Contributions are welcome.
