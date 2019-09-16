@@ -1,6 +1,6 @@
 [package]
 name = "boolector"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Craig Disselkoen <craigdissel@gmail.com>"]
 edition = "2018"
 description = "Safe high-level bindings for the Boolector SMT solver"
