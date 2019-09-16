@@ -1,0 +1,14 @@
+[package]
+name = "boolector"
+version = "0.1.0"
+authors = ["Craig Disselkoen <craigdissel@gmail.com>"]
+edition = "2018"
+description = "Safe high-level bindings for the Boolector SMT solver"
+repository = "https://github.com/cdisselkoen/boolector-rs"
+readme = "README.md"
+keywords = ["boolector", "smt", "ffi", "bindings"]
+license = "MIT"
+
+[dependencies]
+boolector-sys = "0.3.1"
+libc = "0.2"
