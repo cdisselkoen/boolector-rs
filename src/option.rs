@@ -1,3 +1,5 @@
+//! This module exposes options which can be set on a `Btor` instance.
+
 /// Documentation for individual options and their possible values are
 /// more-or-less taken verbatim from the Boolector 3.0.0 docs.
 pub enum BtorOption {

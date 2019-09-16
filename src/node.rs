@@ -1327,6 +1327,7 @@ impl<R: AsRef<Btor> + Clone> fmt::Debug for Array<R> {
     }
 }
 
+/// A `BVSolution` represents a possible solution for one `BV` in a given model.
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub struct BVSolution {
     assignment: String,

@@ -6,7 +6,7 @@ use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
 
 /// A `Btor` represents an instance of the Boolector solver.
-/// Each `BV`, `Array`, and `Sort` is created in a particular `Btor` instance.
+/// Each `BV` and `Array` is created in a particular `Btor` instance.
 #[derive(PartialEq, Eq, Debug)]
 pub struct Btor {
     btor: *mut boolector_sys::Btor,
@@ -304,9 +304,9 @@ impl Btor {
     /// Duplicate a `Btor` instance. This will copy all variables, assertions,
     /// etc into the new instance.
     ///
-    /// Any `BV`, `Sort`, etc objects may only be used with the `Btor` they
-    /// were originally created for. If you have a `BV` for one `Btor` and
-    /// want to find the corresponding `BV` in another `Btor`, use
+    /// Each `BV` or `Array` may only be used with the `Btor` it was originally
+    /// created for. If you have a `BV` for one `Btor` and want to find the
+    /// corresponding `BV` in another `Btor`, use
     /// [`Btor::get_matching_bv()`](struct.Btor.html#method.get_matching_bv) or
     /// [`Btor::get_bv_by_symbol()`](struct.Btor.html#method.get_bv_by_symbol).
     ///
