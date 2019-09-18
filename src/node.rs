@@ -5,7 +5,8 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::os::raw::{c_char, c_void};
 
-/// A bitvector object.
+/// A bitvector object: that is, a single symbolic value, consisting of some
+/// number of symbolic bits.
 ///
 /// This is generic in the `Btor` reference type.
 /// For instance, you could use `BV<Rc<Btor>>` for single-threaded applications,
