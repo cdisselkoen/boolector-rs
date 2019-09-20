@@ -1040,7 +1040,9 @@ impl<R: AsRef<Btor> + Clone> Clone for BV<R> {
 
 impl<R: AsRef<Btor> + Clone> Drop for BV<R> {
     fn drop(&mut self) {
-        unsafe { boolector_release(self.btor.as_ref().as_raw(), self.node) }
+        // Actually releasing here seems to expose some UAF bugs in Boolector
+        // Instead, we just rely on release_all when dropping the Btor
+        // unsafe { boolector_release(self.btor.as_ref().as_raw(), self.node) }
     }
 }
 
@@ -1290,7 +1292,9 @@ impl<R: AsRef<Btor> + Clone> Clone for Array<R> {
 
 impl<R: AsRef<Btor> + Clone> Drop for Array<R> {
     fn drop(&mut self) {
-        unsafe { boolector_release(self.btor.as_ref().as_raw(), self.node) }
+        // Actually releasing here seems to expose some UAF bugs in Boolector
+        // Instead, we just rely on release_all when dropping the Btor
+        // unsafe { boolector_release(self.btor.as_ref().as_raw(), self.node) }
     }
 }
 

@@ -536,8 +536,8 @@ impl Btor {
 impl Drop for Btor {
     fn drop(&mut self) {
         unsafe {
-            //boolector_release_all(self.as_raw());
-            //assert_eq!(boolector_get_refs(self.as_raw()) as i32, 0);
+            boolector_release_all(self.as_raw());
+            assert_eq!(boolector_get_refs(self.as_raw()) as i32, 0);
             boolector_delete(self.as_raw());
         }
     }
