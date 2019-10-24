@@ -141,7 +141,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` representing the given signed integer.
-    /// The new `BV` will be `width` bits wide.
+    /// The new `BV` will have the width `width`.
     pub fn from_i64(btor: R, i: i64, width: u32) -> Self {
         let low_bits = (i & 0xFFFF_FFFF) as i32;
         let high_bits = (i >> 32) as i32;
@@ -161,7 +161,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` representing the given unsigned integer.
-    /// The new `BV` will be `width` bits wide.
+    /// The new `BV` will have the width `width`.
     pub fn from_u64(btor: R, u: u64, width: u32) -> Self {
         let low_bits = (u & 0xFFFF_FFFF) as u32;
         let high_bits = (u >> 32) as u32;
@@ -181,7 +181,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     }
 
     /// Create the constant `0` of the given width.
-    /// This is equivalent to `from_i32(btor, 0, width)`.
+    /// This is equivalent to `from_i32(btor, 0, width)`, but may be more efficient.
     ///
     /// # Example
     ///
@@ -203,7 +203,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     }
 
     /// Create the constant `1` of the given width.
-    /// This is equivalent to `from_i32(btor, 1, width)`.
+    /// This is equivalent to `from_i32(btor, 1, width)`, but may be more efficient.
     ///
     /// # Example
     ///
@@ -225,7 +225,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     }
 
     /// Create a bitvector constant of the given width, where all bits are set to one.
-    /// This is equivalent to `from_i32(btor, -1, width)`.
+    /// This is equivalent to `from_i32(btor, -1, width)`, but may be more efficient.
     ///
     /// # Example
     ///
@@ -699,7 +699,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         /// one, and be `true` if dividing `self` by `other` would overflow when
         /// interpreting both `self` and `other` as signed.
         ///
-        /// Signed division can overflow if `self` is INT_MIN and `other` is `-1`.
+        /// Signed division can overflow if `self` is `INT_MIN` and `other` is `-1`.
         /// Note that unsigned division cannot overflow.
         => sdivo, boolector_sdivo
     );
@@ -713,7 +713,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         => and, boolector_and
     );
     binop!(
-        /// Bitwise 'or' operation. `self` and `other` must have the same bitwidth.
+        /// Bitwise `or` operation. `self` and `other` must have the same bitwidth.
         => or, boolector_or
     );
     binop!(
