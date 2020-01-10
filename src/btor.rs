@@ -535,6 +535,12 @@ impl Btor {
     }
 }
 
+impl Default for Btor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for Btor {
     fn drop(&mut self) {
         unsafe {
