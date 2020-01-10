@@ -379,6 +379,7 @@ impl Btor {
     ///
     /// For a code example, see
     /// [`Btor::duplicate()`](struct.Btor.html#method.duplicate).
+    #[allow(clippy::if_same_then_else)]
     pub fn get_matching_bv<R: AsRef<Btor> + Clone>(btor: R, bv: &BV<R>) -> Option<BV<R>> {
         let node = unsafe { boolector_match_node(btor.as_ref().as_raw(), bv.node) };
         if node.is_null() {
@@ -414,6 +415,7 @@ impl Btor {
     /// Since `Btor::duplicate()` copies all `BV`s to the new `Btor` including
     /// their symbols, this can also be used to find the copied version of a
     /// given `BV` in the new `Btor`.
+    #[allow(clippy::if_same_then_else)]
     pub fn get_bv_by_symbol<R: AsRef<Btor> + Clone>(btor: R, symbol: &str) -> Option<BV<R>> {
         let cstring = CString::new(symbol).unwrap();
         let symbol = cstring.as_ptr() as *const c_char;
