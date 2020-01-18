@@ -4,6 +4,7 @@ version = "0.1.2"
 authors = ["Craig Disselkoen <craigdissel@gmail.com>"]
 edition = "2018"
 description = "Safe high-level bindings for the Boolector SMT solver"
+documentation = "https://docs.rs/boolector"
 repository = "https://github.com/cdisselkoen/boolector-rs"
 readme = "README.md"
 keywords = ["boolector", "smt", "ffi", "bindings"]
