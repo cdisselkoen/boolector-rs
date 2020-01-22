@@ -4,8 +4,9 @@
 
 use boolector_sys::*;
 use crate::btor::Btor;
+use std::borrow::Borrow;
 
-pub struct Sort<R: AsRef<Btor> + Clone> {
+pub struct Sort<R: Borrow<Btor> + Clone> {
     btor: R,
     sort: BoolectorSort,
 }
@@ -16,10 +17,10 @@ pub struct Sort<R: AsRef<Btor> + Clone> {
 // both `Send` and `Sync`.
 // So as long as `R` is `Send` and/or `Sync`, we can mark `Sort` as `Send`
 // and/or `Sync` respectively.
-unsafe impl<R: AsRef<Btor> + Clone + Send> Send for Sort<R> {}
-unsafe impl<R: AsRef<Btor> + Clone + Sync> Sync for Sort<R> {}
+unsafe impl<R: Borrow<Btor> + Clone + Send> Send for Sort<R> {}
+unsafe impl<R: Borrow<Btor> + Clone + Sync> Sync for Sort<R> {}
 
-impl<R: AsRef<Btor> + Clone> Sort<R> {
+impl<R: Borrow<Btor> + Clone> Sort<R> {
     pub(crate) fn from_raw(btor: R, sort: BoolectorSort) -> Self {
         Self {
             btor,
@@ -34,7 +35,7 @@ impl<R: AsRef<Btor> + Clone> Sort<R> {
     /// Create a bitvector sort for the given bitwidth.
     pub fn bitvector(btor: R, width: u32) -> Self {
         Self::from_raw(btor.clone(), unsafe {
-            boolector_bitvec_sort(btor.as_ref().as_raw(), width)
+            boolector_bitvec_sort(btor.borrow().as_raw(), width)
         })
     }
 
@@ -44,7 +45,7 @@ impl<R: AsRef<Btor> + Clone> Sort<R> {
     /// bitwidth one, so this is equivalent to `Sort::bitvector(btor, 1)`.
     pub fn bool(btor: R) -> Self {
         Self::from_raw(btor.clone(), unsafe {
-            boolector_bool_sort(btor.as_ref().as_raw())
+            boolector_bool_sort(btor.borrow().as_raw())
         })
     }
 
@@ -54,28 +55,28 @@ impl<R: AsRef<Btor> + Clone> Sort<R> {
     /// Both the `index` and `element` sorts must be bitvector sorts.
     pub fn array(btor: R, index: &Sort<R>, element: &Sort<R>) -> Self {
         Self::from_raw(btor.clone(), unsafe {
-            boolector_array_sort(btor.as_ref().as_raw(), index.as_raw(), element.as_raw())
+            boolector_array_sort(btor.borrow().as_raw(), index.as_raw(), element.as_raw())
         })
     }
 
     /// Is `self` an array sort?
     pub fn is_array_sort(&self) -> bool {
-        unsafe { boolector_is_array_sort(self.btor.as_ref().as_raw(), self.as_raw()) }
+        unsafe { boolector_is_array_sort(self.btor.borrow().as_raw(), self.as_raw()) }
     }
 
     /// Is `self` a bitvector sort?
     pub fn is_bv_sort(&self) -> bool {
-        unsafe { boolector_is_bitvec_sort(self.btor.as_ref().as_raw(), self.as_raw()) }
+        unsafe { boolector_is_bitvec_sort(self.btor.borrow().as_raw(), self.as_raw()) }
     }
 
     /// Is `self` a function sort?
     pub fn is_fun_sort(&self) -> bool {
-        unsafe { boolector_is_fun_sort(self.btor.as_ref().as_raw(), self.as_raw()) }
+        unsafe { boolector_is_fun_sort(self.btor.borrow().as_raw(), self.as_raw()) }
     }
 }
 
-impl<R: AsRef<Btor> + Clone> Drop for Sort<R> {
+impl<R: Borrow<Btor> + Clone> Drop for Sort<R> {
     fn drop(&mut self) {
-        unsafe { boolector_release_sort(self.btor.as_ref().as_raw(), self.as_raw()) }
+        unsafe { boolector_release_sort(self.btor.borrow().as_raw(), self.as_raw()) }
     }
 }

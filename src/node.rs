@@ -1,6 +1,7 @@
 use boolector_sys::*;
 use crate::btor::Btor;
 use crate::sort::Sort;
+use std::borrow::Borrow;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::os::raw::{c_char, c_void};
@@ -12,7 +13,7 @@ use std::os::raw::{c_char, c_void};
 /// For instance, you could use `BV<Rc<Btor>>` for single-threaded applications,
 /// or `BV<Arc<Btor>>` for multi-threaded applications.
 #[derive(PartialEq, Eq)]
-pub struct BV<R: AsRef<Btor> + Clone> {
+pub struct BV<R: Borrow<Btor> + Clone> {
     pub(crate) btor: R,
     pub(crate) node: *mut BoolectorNode,
 }
@@ -23,8 +24,8 @@ pub struct BV<R: AsRef<Btor> + Clone> {
 // both `Send` and `Sync`.
 // So as long as `R` is `Send` and/or `Sync`, we can mark `BV` as `Send` and/or
 // `Sync` respectively.
-unsafe impl<R: AsRef<Btor> + Clone + Send> Send for BV<R> {}
-unsafe impl<R: AsRef<Btor> + Clone + Sync> Sync for BV<R> {}
+unsafe impl<R: Borrow<Btor> + Clone + Send> Send for BV<R> {}
+unsafe impl<R: Borrow<Btor> + Clone + Sync> Sync for BV<R> {}
 
 // The attr:meta stuff is so that doc comments work correctly.
 // See https://stackoverflow.com/questions/41361897/documenting-a-function-created-with-a-macro-in-rust
@@ -34,7 +35,7 @@ macro_rules! unop {
         pub fn $f(&self) -> Self {
             Self {
                 btor: self.btor.clone(),
-                node: unsafe { $rawfn(self.btor.as_ref().as_raw(), self.node) },
+                node: unsafe { $rawfn(self.btor.borrow().as_raw(), self.node) },
             }
         }
     };
@@ -48,13 +49,13 @@ macro_rules! binop {
         pub fn $f(&self, other: &Self) -> Self {
             Self {
                 btor: self.btor.clone(),
-                node: unsafe { $rawfn(self.btor.as_ref().as_raw(), self.node, other.node) },
+                node: unsafe { $rawfn(self.btor.borrow().as_raw(), self.node, other.node) },
             }
         }
     };
 }
 
-impl<R: AsRef<Btor> + Clone> BV<R> {
+impl<R: Borrow<Btor> + Clone> BV<R> {
     /// Create a new unconstrained `BV` variable of the given `width`.
     ///
     /// The `symbol`, if present, will be used to identify the `BV` when printing
@@ -83,11 +84,11 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     pub fn new(btor: R, width: u32, symbol: Option<&str>) -> Self {
         let sort = Sort::bitvector(btor.clone(), width);
         let node = match symbol {
-            None => unsafe { boolector_var(btor.as_ref().as_raw(), sort.as_raw(), std::ptr::null()) },
+            None => unsafe { boolector_var(btor.borrow().as_raw(), sort.as_raw(), std::ptr::null()) },
             Some(symbol) => {
                 let cstring = CString::new(symbol).unwrap();
                 let symbol = cstring.as_ptr() as *const c_char;
-                unsafe { boolector_var(btor.as_ref().as_raw(), sort.as_raw(), symbol) }
+                unsafe { boolector_var(btor.borrow().as_raw(), sort.as_raw(), symbol) }
             },
         };
         Self {
@@ -105,9 +106,9 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         Self {
             node: {
                 if b {
-                    unsafe { boolector_true(btor.as_ref().as_raw()) }
+                    unsafe { boolector_true(btor.borrow().as_raw()) }
                 } else {
-                    unsafe { boolector_false(btor.as_ref().as_raw()) }
+                    unsafe { boolector_false(btor.borrow().as_raw()) }
                 }
             },
             btor,  // out of order so it can be used above but moved in here
@@ -120,7 +121,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let sort = Sort::bitvector(btor.clone(), width);
         Self {
             node: unsafe {
-                boolector_int(btor.as_ref().as_raw(), i, sort.as_raw())
+                boolector_int(btor.borrow().as_raw(), i, sort.as_raw())
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -134,7 +135,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let sort = Sort::bitvector(btor.clone(), width);
         Self {
             node: unsafe {
-                boolector_unsigned_int(btor.as_ref().as_raw(), u, sort.as_raw())
+                boolector_unsigned_int(btor.borrow().as_raw(), u, sort.as_raw())
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -149,7 +150,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
             Self::from_i32(btor, low_bits, width)
         } else {
             let bv64 = Self::from_i32(btor.clone(), high_bits, 32)
-                .concat(&Self::from_i32(btor.clone(), low_bits, 32));
+                .concat(&Self::from_i32(btor, low_bits, 32));
             if width < 64 {
                 bv64.slice(width - 1, 0)
             } else if width == 64 {
@@ -169,7 +170,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
             Self::from_u32(btor, low_bits, width)
         } else {
             let bv64 = Self::from_u32(btor.clone(), high_bits, 32)
-                .concat(&Self::from_u32(btor.clone(), low_bits, 32));
+                .concat(&Self::from_u32(btor, low_bits, 32));
             if width < 64 {
                 bv64.slice(width - 1, 0)
             } else if width == 64 {
@@ -196,7 +197,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let sort = Sort::bitvector(btor.clone(), width);
         Self {
             node: unsafe {
-                boolector_zero(btor.as_ref().as_raw(), sort.as_raw())
+                boolector_zero(btor.borrow().as_raw(), sort.as_raw())
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -218,7 +219,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let sort = Sort::bitvector(btor.clone(), width);
         Self {
             node: unsafe {
-                boolector_one(btor.as_ref().as_raw(), sort.as_raw())
+                boolector_one(btor.borrow().as_raw(), sort.as_raw())
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -240,7 +241,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let sort = Sort::bitvector(btor.clone(), width);
         Self {
             node: unsafe {
-                boolector_ones(btor.as_ref().as_raw(), sort.as_raw())
+                boolector_ones(btor.borrow().as_raw(), sort.as_raw())
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -256,7 +257,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let cstring = CString::new(bits).unwrap();
         Self {
             node: unsafe {
-                boolector_const(btor.as_ref().as_raw(), cstring.as_ptr() as *const c_char)
+                boolector_const(btor.borrow().as_raw(), cstring.as_ptr() as *const c_char)
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -269,7 +270,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let cstring = CString::new(num).unwrap();
         Self {
             node: unsafe {
-                boolector_constd(btor.as_ref().as_raw(), sort.as_raw(), cstring.as_ptr() as *const c_char)
+                boolector_constd(btor.borrow().as_raw(), sort.as_raw(), cstring.as_ptr() as *const c_char)
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -282,7 +283,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         let cstring = CString::new(num).unwrap();
         Self {
             node: unsafe {
-                boolector_consth(btor.as_ref().as_raw(), sort.as_raw(), cstring.as_ptr() as *const c_char)
+                boolector_consth(btor.borrow().as_raw(), sort.as_raw(), cstring.as_ptr() as *const c_char)
             },
             btor,  // out of order so it can be used above but moved in here
         }
@@ -316,10 +317,10 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     /// ```
     pub fn as_binary_str(&self) -> Option<String> {
         if self.is_const() {
-            let raw = unsafe { boolector_get_bits(self.btor.as_ref().as_raw(), self.node) };
+            let raw = unsafe { boolector_get_bits(self.btor.borrow().as_raw(), self.node) };
             let cstr = unsafe { CStr::from_ptr(raw) };
             let string = cstr.to_str().unwrap().to_owned();
-            unsafe { boolector_free_bits(self.btor.as_ref().as_raw(), raw) };
+            unsafe { boolector_free_bits(self.btor.borrow().as_raw(), raw) };
             Some(string)
         } else {
             None
@@ -399,8 +400,8 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     /// For a code example, see [`BV::new()`](struct.BV.html#method.new).
     pub fn get_a_solution(&self) -> BVSolution {
         BVSolution::from_raw(
-            &self.btor.as_ref(),
-            unsafe { boolector_bv_assignment(self.btor.as_ref().as_raw(), self.node) },
+            &self.btor.borrow(),
+            unsafe { boolector_bv_assignment(self.btor.borrow().as_raw(), self.node) },
         )
     }
 
@@ -411,19 +412,19 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
 
     /// Get the id of the `BV`
     pub fn get_id(&self) -> i32 {
-        unsafe { boolector_get_node_id(self.btor.as_ref().as_raw(), self.node) }
+        unsafe { boolector_get_node_id(self.btor.borrow().as_raw(), self.node) }
     }
 
     /// Get the bitwidth of the `BV`
     pub fn get_width(&self) -> u32 {
         unsafe {
-            boolector_get_width(self.btor.as_ref().as_raw(), self.node)
+            boolector_get_width(self.btor.borrow().as_raw(), self.node)
         }
     }
 
     /// Get the symbol of the `BV`, if one was assigned
     pub fn get_symbol(&self) -> Option<&str> {
-        let raw = unsafe { boolector_get_symbol(self.btor.as_ref().as_raw(), self.node) };
+        let raw = unsafe { boolector_get_symbol(self.btor.borrow().as_raw(), self.node) };
         if raw.is_null() {
             None
         } else {
@@ -436,11 +437,11 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     /// [`BV::new()`](struct.BV.html#method.new).
     pub fn set_symbol(&mut self, symbol: Option<&str>) {
         match symbol {
-            None => unsafe { boolector_set_symbol(self.btor.as_ref().as_raw(), self.node, std::ptr::null()) },
+            None => unsafe { boolector_set_symbol(self.btor.borrow().as_raw(), self.node, std::ptr::null()) },
             Some(symbol) => {
                 let cstring = CString::new(symbol).unwrap();
                 let symbol = cstring.as_ptr() as *const c_char;
-                unsafe { boolector_set_symbol(self.btor.as_ref().as_raw(), self.node, symbol) }
+                unsafe { boolector_set_symbol(self.btor.borrow().as_raw(), self.node, symbol) }
             },
         }
     }
@@ -472,14 +473,14 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     /// ```
     pub fn is_const(&self) -> bool {
         unsafe {
-            boolector_is_const(self.btor.as_ref().as_raw(), self.node)
+            boolector_is_const(self.btor.borrow().as_raw(), self.node)
         }
     }
 
     /// Does `self` have the same width as `other`?
     pub fn has_same_width(&self, other: &Self) -> bool {
         unsafe {
-            boolector_is_equal_sort(self.btor.as_ref().as_raw(), self.node, other.node)
+            boolector_is_equal_sort(self.btor.borrow().as_raw(), self.node, other.node)
         }
     }
 
@@ -520,7 +521,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     /// ```
     pub fn assert(&self) {
         unsafe {
-            boolector_assert(self.btor.as_ref().as_raw(), self.node)
+            boolector_assert(self.btor.borrow().as_raw(), self.node)
         }
     }
 
@@ -561,7 +562,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     /// ```
     pub fn assume(&self) {
         unsafe {
-            boolector_assume(self.btor.as_ref().as_raw(), self.node)
+            boolector_assume(self.btor.borrow().as_raw(), self.node)
         }
     }
 
@@ -594,7 +595,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
     /// ```
     pub fn is_failed_assumption(&self) -> bool {
         unsafe {
-            boolector_failed(self.btor.as_ref().as_raw(), self.node)
+            boolector_failed(self.btor.borrow().as_raw(), self.node)
         }
     }
 
@@ -858,7 +859,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_uext(self.btor.as_ref().as_raw(), self.node, n)
+                boolector_uext(self.btor.borrow().as_raw(), self.node, n)
             },
         }
     }
@@ -887,7 +888,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_sext(self.btor.as_ref().as_raw(), self.node, n)
+                boolector_sext(self.btor.borrow().as_raw(), self.node, n)
             },
         }
     }
@@ -917,7 +918,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_slice(self.btor.as_ref().as_raw(), self.node, high, low)
+                boolector_slice(self.btor.borrow().as_raw(), self.node, high, low)
             },
         }
     }
@@ -956,7 +957,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_repeat(self.btor.as_ref().as_raw(), self.node, n)
+                boolector_repeat(self.btor.borrow().as_raw(), self.node, n)
             },
         }
     }
@@ -1008,7 +1009,7 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_cond(self.btor.as_ref().as_raw(), self.node, truebv.node, falsebv.node)
+                boolector_cond(self.btor.borrow().as_raw(), self.node, truebv.node, falsebv.node)
             },
         }
     }
@@ -1021,32 +1022,32 @@ impl<R: AsRef<Btor> + Clone> BV<R> {
         Array {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_cond(self.btor.as_ref().as_raw(), self.node, true_array.node, false_array.node)
+                boolector_cond(self.btor.borrow().as_raw(), self.node, true_array.node, false_array.node)
             },
         }
     }
 }
 
-impl<R: AsRef<Btor> + Clone> Clone for BV<R> {
+impl<R: Borrow<Btor> + Clone> Clone for BV<R> {
     fn clone(&self) -> Self {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_copy(self.btor.as_ref().as_raw(), self.node)  // not an actual copy, just incrementing the refcount properly
+                boolector_copy(self.btor.borrow().as_raw(), self.node)  // not an actual copy, just incrementing the refcount properly
             },
         }
     }
 }
 
-impl<R: AsRef<Btor> + Clone> Drop for BV<R> {
+impl<R: Borrow<Btor> + Clone> Drop for BV<R> {
     fn drop(&mut self) {
         // Actually releasing here seems to expose some UAF bugs in Boolector
         // Instead, we just rely on release_all when dropping the Btor
-        // unsafe { boolector_release(self.btor.as_ref().as_raw(), self.node) }
+        // unsafe { boolector_release(self.btor.borrow().as_raw(), self.node) }
     }
 }
 
-impl<R: AsRef<Btor> + Clone> fmt::Debug for BV<R> {
+impl<R: Borrow<Btor> + Clone> fmt::Debug for BV<R> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         const MAX_LENGTH: i64 = 2000;  // If the text representation of the `BV` exceeds this length, subsitute a placeholder instead
         unsafe {
@@ -1055,7 +1056,7 @@ impl<R: AsRef<Btor> + Clone> fmt::Debug for BV<R> {
                 panic!("Failed to create a temp file");
             }
             // Write the data to `tmpfile`
-            boolector_dump_smt2_node(self.btor.as_ref().as_raw(), tmpfile, self.node);
+            boolector_dump_smt2_node(self.btor.borrow().as_raw(), tmpfile, self.node);
             // Seek to the end of `tmpfile`
             assert_eq!(libc::fseek(tmpfile, 0, libc::SEEK_END), 0);
             // Get the length of `tmpfile`
@@ -1086,7 +1087,7 @@ impl<R: AsRef<Btor> + Clone> fmt::Debug for BV<R> {
 /// For instance, you could use `Array<Rc<Btor>>` for single-threaded applications,
 /// or `Array<Arc<Btor>>` for multi-threaded applications.
 #[derive(PartialEq, Eq)]
-pub struct Array<R: AsRef<Btor> + Clone> {
+pub struct Array<R: Borrow<Btor> + Clone> {
     pub(crate) btor: R,
     pub(crate) node: *mut BoolectorNode,
 }
@@ -1097,10 +1098,10 @@ pub struct Array<R: AsRef<Btor> + Clone> {
 // both `Send` and `Sync`.
 // So as long as `R` is `Send` and/or `Sync`, we can mark `Array` as `Send`
 // and/or `Sync` respectively.
-unsafe impl<R: AsRef<Btor> + Clone + Send> Send for Array<R> {}
-unsafe impl<R: AsRef<Btor> + Clone + Sync> Sync for Array<R> {}
+unsafe impl<R: Borrow<Btor> + Clone + Send> Send for Array<R> {}
+unsafe impl<R: Borrow<Btor> + Clone + Sync> Sync for Array<R> {}
 
-impl<R: AsRef<Btor> + Clone> Array<R> {
+impl<R: Borrow<Btor> + Clone> Array<R> {
     /// Create a new `Array` which maps `BV`s of width `index_width` to `BV`s of
     /// width `element_width`. All values in the `Array` will be unconstrained.
     ///
@@ -1133,11 +1134,11 @@ impl<R: AsRef<Btor> + Clone> Array<R> {
         let element_sort = Sort::bitvector(btor.clone(), element_width);
         let array_sort = Sort::array(btor.clone(), &index_sort, &element_sort);
         let node = match symbol {
-            None => unsafe { boolector_array(btor.as_ref().as_raw(), array_sort.as_raw(), std::ptr::null()) },
+            None => unsafe { boolector_array(btor.borrow().as_raw(), array_sort.as_raw(), std::ptr::null()) },
             Some(symbol) => {
                 let cstring = CString::new(symbol).unwrap();
                 let symbol = cstring.as_ptr() as *const c_char;
-                unsafe { boolector_array(btor.as_ref().as_raw(), array_sort.as_raw(), symbol) }
+                unsafe { boolector_array(btor.borrow().as_raw(), array_sort.as_raw(), symbol) }
             },
         };
         Self {
@@ -1200,11 +1201,11 @@ impl<R: AsRef<Btor> + Clone> Array<R> {
         let element_sort = Sort::bitvector(btor.clone(), element_width);
         let array_sort = Sort::array(btor.clone(), &index_sort, &element_sort);
         let node = match symbol {
-            None => unsafe { boolector_const_array(btor.as_ref().as_raw(), array_sort.as_raw(), val.node, std::ptr::null()) },
+            None => unsafe { boolector_const_array(btor.borrow().as_raw(), array_sort.as_raw(), val.node, std::ptr::null()) },
             Some(symbol) => {
                 let cstring = CString::new(symbol).unwrap();
                 let symbol = cstring.as_ptr() as *const c_char;
-                unsafe { boolector_const_array(btor.as_ref().as_raw(), array_sort.as_raw(), val.node, symbol) }
+                unsafe { boolector_const_array(btor.borrow().as_raw(), array_sort.as_raw(), val.node, symbol) }
             },
         };
         Self {
@@ -1215,17 +1216,17 @@ impl<R: AsRef<Btor> + Clone> Array<R> {
 
     /// Get the bitwidth of the index type of the `Array`
     pub fn get_index_width(&self) -> u32 {
-        unsafe { boolector_get_index_width(self.btor.as_ref().as_raw(), self.node) }
+        unsafe { boolector_get_index_width(self.btor.borrow().as_raw(), self.node) }
     }
 
     /// Get the bitwidth of the element type of the `Array`
     pub fn get_element_width(&self) -> u32 {
-        unsafe { boolector_get_width(self.btor.as_ref().as_raw(), self.node) }
+        unsafe { boolector_get_width(self.btor.borrow().as_raw(), self.node) }
     }
 
     /// Get the symbol of the `Array`, if one was assigned
     pub fn get_symbol(&self) -> Option<&str> {
-        let raw = unsafe { boolector_get_symbol(self.btor.as_ref().as_raw(), self.node) };
+        let raw = unsafe { boolector_get_symbol(self.btor.borrow().as_raw(), self.node) };
         if raw.is_null() {
             None
         } else {
@@ -1237,14 +1238,14 @@ impl<R: AsRef<Btor> + Clone> Array<R> {
     /// Does the `Array` have a constant value?
     pub fn is_const(&self) -> bool {
         unsafe {
-            boolector_is_const(self.btor.as_ref().as_raw(), self.node)
+            boolector_is_const(self.btor.borrow().as_raw(), self.node)
         }
     }
 
     /// Does `self` have the same index and element widths as `other`?
     pub fn has_same_widths(&self, other: &Self) -> bool {
         unsafe {
-            boolector_is_equal_sort(self.btor.as_ref().as_raw(), self.node, other.node)
+            boolector_is_equal_sort(self.btor.borrow().as_raw(), self.node, other.node)
         }
     }
 
@@ -1262,7 +1263,7 @@ impl<R: AsRef<Btor> + Clone> Array<R> {
         BV {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_read(self.btor.as_ref().as_raw(), self.node, index.node)
+                boolector_read(self.btor.borrow().as_raw(), self.node, index.node)
             },
         }
     }
@@ -1273,32 +1274,32 @@ impl<R: AsRef<Btor> + Clone> Array<R> {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_write(self.btor.as_ref().as_raw(), self.node, index.node, value.node)
+                boolector_write(self.btor.borrow().as_raw(), self.node, index.node, value.node)
             },
         }
     }
 }
 
-impl<R: AsRef<Btor> + Clone> Clone for Array<R> {
+impl<R: Borrow<Btor> + Clone> Clone for Array<R> {
     fn clone(&self) -> Self {
         Self {
             btor: self.btor.clone(),
             node: unsafe {
-                boolector_copy(self.btor.as_ref().as_raw(), self.node)  // not an actual copy, just incrementing the refcount properly
+                boolector_copy(self.btor.borrow().as_raw(), self.node)  // not an actual copy, just incrementing the refcount properly
             },
         }
     }
 }
 
-impl<R: AsRef<Btor> + Clone> Drop for Array<R> {
+impl<R: Borrow<Btor> + Clone> Drop for Array<R> {
     fn drop(&mut self) {
         // Actually releasing here seems to expose some UAF bugs in Boolector
         // Instead, we just rely on release_all when dropping the Btor
-        // unsafe { boolector_release(self.btor.as_ref().as_raw(), self.node) }
+        // unsafe { boolector_release(self.btor.borrow().as_raw(), self.node) }
     }
 }
 
-impl<R: AsRef<Btor> + Clone> fmt::Debug for Array<R> {
+impl<R: Borrow<Btor> + Clone> fmt::Debug for Array<R> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         const MAX_LENGTH: i64 = 2000;  // If the text representation of the `Array` exceeds this length, subsitute a placeholder instead
         unsafe {
@@ -1307,7 +1308,7 @@ impl<R: AsRef<Btor> + Clone> fmt::Debug for Array<R> {
                 panic!("Failed to create a temp file");
             }
             // Write the data to `tmpfile`
-            boolector_dump_smt2_node(self.btor.as_ref().as_raw(), tmpfile, self.node);
+            boolector_dump_smt2_node(self.btor.borrow().as_raw(), tmpfile, self.node);
             // Seek to the end of `tmpfile`
             assert_eq!(libc::fseek(tmpfile, 0, libc::SEEK_END), 0);
             // Get the length of `tmpfile`

@@ -2,6 +2,7 @@ use boolector_sys::*;
 use crate::node::{Array, BV};
 use crate::option::*;
 use crate::option::BtorOption;
+use std::borrow::Borrow;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
 
@@ -380,11 +381,11 @@ impl Btor {
     /// For a code example, see
     /// [`Btor::duplicate()`](struct.Btor.html#method.duplicate).
     #[allow(clippy::if_same_then_else)]
-    pub fn get_matching_bv<R: AsRef<Btor> + Clone>(btor: R, bv: &BV<R>) -> Option<BV<R>> {
-        let node = unsafe { boolector_match_node(btor.as_ref().as_raw(), bv.node) };
+    pub fn get_matching_bv<R: Borrow<Btor> + Clone>(btor: R, bv: &BV<R>) -> Option<BV<R>> {
+        let node = unsafe { boolector_match_node(btor.borrow().as_raw(), bv.node) };
         if node.is_null() {
             None
-        } else if unsafe { boolector_is_array(btor.as_ref().as_raw(), node) } {
+        } else if unsafe { boolector_is_array(btor.borrow().as_raw(), node) } {
             None
         } else {
             Some(BV { btor, node })
@@ -399,11 +400,11 @@ impl Btor {
     ///
     /// It's also fine to call this with an `Array` created for the given `Btor`
     /// itself, in which case you'll just get back `Some(array.clone())`.
-    pub fn get_matching_array<R: AsRef<Btor> + Clone>(btor: R, array: &Array<R>) -> Option<Array<R>> {
-        let node = unsafe { boolector_match_node(btor.as_ref().as_raw(), array.node) };
+    pub fn get_matching_array<R: Borrow<Btor> + Clone>(btor: R, array: &Array<R>) -> Option<Array<R>> {
+        let node = unsafe { boolector_match_node(btor.borrow().as_raw(), array.node) };
         if node.is_null() {
             None
-        } else if unsafe { boolector_is_array(btor.as_ref().as_raw(), node) } {
+        } else if unsafe { boolector_is_array(btor.borrow().as_raw(), node) } {
             Some(Array { btor, node })
         } else {
             None
@@ -416,13 +417,13 @@ impl Btor {
     /// their symbols, this can also be used to find the copied version of a
     /// given `BV` in the new `Btor`.
     #[allow(clippy::if_same_then_else)]
-    pub fn get_bv_by_symbol<R: AsRef<Btor> + Clone>(btor: R, symbol: &str) -> Option<BV<R>> {
+    pub fn get_bv_by_symbol<R: Borrow<Btor> + Clone>(btor: R, symbol: &str) -> Option<BV<R>> {
         let cstring = CString::new(symbol).unwrap();
         let symbol = cstring.as_ptr() as *const c_char;
-        let node = unsafe { boolector_match_node_by_symbol(btor.as_ref().as_raw(), symbol) };
+        let node = unsafe { boolector_match_node_by_symbol(btor.borrow().as_raw(), symbol) };
         if node.is_null() {
             None
-        } else if unsafe { boolector_is_array(btor.as_ref().as_raw(), node) } {
+        } else if unsafe { boolector_is_array(btor.borrow().as_raw(), node) } {
             None
         } else {
             Some(BV { btor, node })
@@ -435,13 +436,13 @@ impl Btor {
     /// Since `Btor::duplicate()` copies all `Array`s to the new `Btor` including
     /// their symbols, this can also be used to find the copied version of a
     /// given `Array` in the new `Btor`.
-    pub fn get_array_by_symbol<R: AsRef<Btor> + Clone>(btor: R, symbol: &str) -> Option<Array<R>> {
+    pub fn get_array_by_symbol<R: Borrow<Btor> + Clone>(btor: R, symbol: &str) -> Option<Array<R>> {
         let cstring = CString::new(symbol).unwrap();
         let symbol = cstring.as_ptr() as *const c_char;
-        let node = unsafe { boolector_match_node_by_symbol(btor.as_ref().as_raw(), symbol) };
+        let node = unsafe { boolector_match_node_by_symbol(btor.borrow().as_raw(), symbol) };
         if node.is_null() {
             None
-        } else if unsafe { boolector_is_array(btor.as_ref().as_raw(), node) } {
+        } else if unsafe { boolector_is_array(btor.borrow().as_raw(), node) } {
             Some(Array { btor, node })
         } else {
             None
