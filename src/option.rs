@@ -15,6 +15,12 @@ pub enum BtorOption {
     OutputNumberFormat(NumberFormat),
     /// Output file format. The default is `FileFormat::BTOR`.
     OutputFileFormat(FileFormat),
+    /// Solver timeout. If `Some`, then operations lasting longer than the given
+    /// `Duration` will be aborted and return `SolverResult::Unknown`.
+    ///
+    /// If `None`, then any previously set solver timeout will be removed, and
+    /// there will be no time limit to solver operations.
+    SolverTimeout(Option<std::time::Duration>),
     /// Solver engine. The default is `SolverEngine::Fun`.
     SolverEngine(SolverEngine),
     /// SAT solver. Each option requires that Boolector was compiled with support

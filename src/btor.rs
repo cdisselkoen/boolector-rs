@@ -2,21 +2,35 @@ use boolector_sys::*;
 use crate::node::{Array, BV};
 use crate::option::*;
 use crate::option::BtorOption;
+use crate::timeout::{self, TimeoutState};
 use std::borrow::Borrow;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
+use std::pin::Pin;
 
 /// A `Btor` represents an instance of the Boolector solver.
 /// Each `BV` and `Array` is created in a particular `Btor` instance.
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Debug)]
 pub struct Btor {
     btor: *mut boolector_sys::Btor,
+    timeout_state: Pin<Box<timeout::TimeoutState>>,  // needs to be `Pin`, because the Boolector callback will expect to continue to find the `TimeoutState` at the same location
 }
+
+// Two `Btor`s are equal if they have the same underlying Btor pointer.
+// We disregard the `timeout_state` for this purpose.
+impl PartialEq for Btor {
+    fn eq(&self, other: &Self) -> bool {
+        self.btor == other.btor
+    }
+}
+
+impl Eq for Btor { }
 
 /// According to
 /// https://groups.google.com/forum/#!msg/boolector/itYGgJxU3mY/AC2O0898BAAJ,
 /// the Boolector library is thread-safe, so we make `Btor` both `Send` and
-/// `Sync`.
+/// `Sync`. (Note that `TimeoutState` is also careful to be both `Send` and
+/// `Sync`.)
 unsafe impl Send for Btor {}
 unsafe impl Sync for Btor {}
 
@@ -25,6 +39,7 @@ impl Btor {
     pub fn new() -> Self {
         Self {
             btor: unsafe { boolector_new() },
+            timeout_state: Pin::new(Box::new(timeout::TimeoutState::new())),
         }
     }
 
@@ -70,6 +85,21 @@ impl Btor {
                     FileFormat::SMTLIBv2 => 2,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_OUTPUT_FORMAT, val) }
+            },
+            BtorOption::SolverTimeout(duration) => {
+                self.timeout_state.set_timeout_duration(duration);
+                match duration {
+                    None => {
+                        // remove any existing timeout
+                        unsafe { boolector_set_term(self.as_raw(), None, std::ptr::null_mut()) }
+                    },
+                    Some(_) => {
+                        let ptr_to_ts: Pin<&TimeoutState> = (&self.timeout_state).as_ref();
+                        let raw_ptr_to_ts: *const TimeoutState = Pin::into_inner(ptr_to_ts) as *const TimeoutState;
+                        let void_ptr_to_ts: *mut c_void = raw_ptr_to_ts as *mut c_void;
+                        unsafe { boolector_set_term(self.as_raw(), Some(timeout::callback), void_ptr_to_ts) }
+                    },
+                }
             },
             BtorOption::SolverEngine(se) => {
                 let val = match se {
@@ -282,7 +312,42 @@ impl Btor {
     /// enabled via [`Btor::set_opt()`](struct.Btor.html#method.set_opt).
     /// If incremental usage is not enabled, this function may only be called
     /// once.
+    ///
+    /// ```
+    /// # use boolector::{Btor, BV, SolverResult};
+    /// # use boolector::option::{BtorOption, ModelGen};
+    /// # use std::rc::Rc;
+    /// let btor = Rc::new(Btor::new());
+    /// btor.set_opt(BtorOption::Incremental(true));
+    ///
+    /// // An 8-bit unconstrained `BV` with the symbol "foo"
+    /// let foo = BV::new(btor.clone(), 8, Some("foo"));
+    ///
+    /// // Assert that "foo" must be greater than `3`
+    /// foo.ugt(&BV::from_u32(btor.clone(), 3, 8)).assert();
+    ///
+    /// // This state is satisfiable
+    /// assert_eq!(btor.sat(), SolverResult::Sat);
+    ///
+    /// // Assert that "foo" must also be less than `2`
+    /// foo.ult(&BV::from_u32(btor.clone(), 2, 8)).assert();
+    ///
+    /// // State is now unsatisfiable
+    /// assert_eq!(btor.sat(), SolverResult::Unsat);
+    ///
+    /// // If we set the solver timeout to something extremely
+    /// // high (say, 200 sec), we should still get the same result
+    /// # use std::time::Duration;
+    /// btor.set_opt(BtorOption::SolverTimeout(Some(Duration::from_secs(200))));
+    /// assert_eq!(btor.sat(), SolverResult::Unsat);
+    ///
+    /// // But, if we set the solver timeout to something
+    /// // extremely low (say, 2 ns), we'll get `SolverResult::Unknown`
+    /// btor.set_opt(BtorOption::SolverTimeout(Some(Duration::from_nanos(2))));
+    /// assert_eq!(btor.sat(), SolverResult::Unknown);
+    /// ```
     pub fn sat(&self) -> SolverResult {
+        self.timeout_state.restart_timer();
         #[allow(non_upper_case_globals)]
         match unsafe { boolector_sat(self.as_raw()) } as u32 {
             BtorSolverResult_BTOR_RESULT_SAT => SolverResult::Sat,
@@ -365,9 +430,16 @@ impl Btor {
     /// assert!(y_2_solution < 10);
     /// ```
     pub fn duplicate(&self) -> Self {
-        Self {
+        let duplicated = Self {
             btor: unsafe { boolector_clone(self.as_raw()) },
-        }
+            timeout_state: Pin::new(Box::new(TimeoutState::with_timeout_duration(self.timeout_state.get_timeout_duration()))),
+        };
+        // we need to inform the callback about the new location of the `TimeoutState`
+        let ptr_to_ts: Pin<&TimeoutState> = (&self.timeout_state).as_ref();
+        let raw_ptr_to_ts: *const TimeoutState = Pin::into_inner(ptr_to_ts) as *const TimeoutState;
+        let void_ptr_to_ts: *mut c_void = raw_ptr_to_ts as *mut c_void;
+        unsafe { boolector_set_term(self.as_raw(), Some(timeout::callback), void_ptr_to_ts) }
+        duplicated
     }
 
     /// Given a `BV` originally created for any `Btor`, get the corresponding
