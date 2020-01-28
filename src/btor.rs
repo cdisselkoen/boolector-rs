@@ -63,34 +63,45 @@ impl Btor {
                     ModelGen::Asserted => 1,
                     ModelGen::All => 2,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_MODEL_GEN, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_MODEL_GEN, val) }
             },
             BtorOption::Incremental(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_INCREMENTAL, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_INCREMENTAL, if b { 1 } else { 0 }) }
             },
             BtorOption::IncrementalSMT1(ismt1) => {
                 let val = match ismt1 {
-                    IncrementalSMT1::Disabled => 0,
-                    IncrementalSMT1::EagerStop => 1,
-                    IncrementalSMT1::SolveAll => 2,
+                    IncrementalSMT1::Basic => BTOR_INCREMENTAL_SMT1_BASIC,
+                    IncrementalSMT1::Continue => BTOR_INCREMENTAL_SMT1_CONTINUE,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_INCREMENTAL_SMT1, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_INCREMENTAL_SMT1, val) }
             },
+            BtorOption::InputFileFormat(iff) => {
+                let val = match iff {
+                    InputFileFormat::Autodetect => BTOR_INPUT_FORMAT_NONE,
+                    InputFileFormat::Btor => BTOR_INPUT_FORMAT_BTOR,
+                    InputFileFormat::Btor2 => BTOR_INPUT_FORMAT_BTOR2,
+                    InputFileFormat::SMTLIBv1 => BTOR_INPUT_FORMAT_SMT1,
+                    InputFileFormat::SMTLIBv2 => BTOR_INPUT_FORMAT_SMT2,
+                };
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_INPUT_FORMAT, val) }
+            }
             BtorOption::OutputNumberFormat(nf) => {
                 let val = match nf {
-                    NumberFormat::Binary => 0,
-                    NumberFormat::Decimal => 2,
-                    NumberFormat::Hexadecimal => 1,
+                    NumberFormat::Binary => BTOR_OUTPUT_BASE_BIN,
+                    NumberFormat::Decimal => BTOR_OUTPUT_BASE_DEC,
+                    NumberFormat::Hexadecimal => BTOR_OUTPUT_BASE_HEX,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_OUTPUT_NUMBER_FORMAT, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT, val) }
             },
-            BtorOption::OutputFileFormat(ff) => {
-                let val = match ff {
-                    FileFormat::BTOR => (-1_i32) as u32,
-                    FileFormat::SMTLIBv1 => 1,
-                    FileFormat::SMTLIBv2 => 2,
+            BtorOption::OutputFileFormat(off) => {
+                let val = match off {
+                    OutputFileFormat::BTOR => BTOR_OUTPUT_FORMAT_BTOR,
+                    OutputFileFormat::BTOR2 => BTOR_OUTPUT_FORMAT_BTOR2,
+                    OutputFileFormat::SMTLIBv2 => BTOR_OUTPUT_FORMAT_SMT2,
+                    OutputFileFormat::AigerASCII => BTOR_OUTPUT_FORMAT_AIGER_ASCII,
+                    OutputFileFormat::AigerBinary => BTOR_OUTPUT_FORMAT_AIGER_BINARY,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_OUTPUT_FORMAT, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_OUTPUT_FORMAT, val) }
             },
             BtorOption::SolverTimeout(duration) => {
                 self.timeout_state.set_timeout_duration(duration);
@@ -109,29 +120,32 @@ impl Btor {
             },
             BtorOption::SolverEngine(se) => {
                 let val = match se {
-                    SolverEngine::Fun => 0,
-                    SolverEngine::SLS => 1,
-                    SolverEngine::Prop => 2,
+                    SolverEngine::Fun => BTOR_ENGINE_FUN,
+                    SolverEngine::SLS => BTOR_ENGINE_SLS,
+                    SolverEngine::Prop => BTOR_ENGINE_PROP,
+                    SolverEngine::AIGProp => BTOR_ENGINE_AIGPROP,
+                    SolverEngine::Quant => BTOR_ENGINE_QUANT,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_ENGINE, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_ENGINE, val) }
             },
             BtorOption::SatEngine(se) => {
-                let s: &'static str = match se {
-                    SatEngine::Lingeling => "Lingeling",
-                    SatEngine::PicoSAT => "PicoSAT",
-                    SatEngine::MiniSAT => "MiniSAT",
+                let val = match se {
+                    SatEngine::CaDiCaL => BTOR_SAT_ENGINE_CADICAL,
+                    SatEngine::CMS => BTOR_SAT_ENGINE_CMS,
+                    SatEngine::Lingeling => BTOR_SAT_ENGINE_LINGELING,
+                    SatEngine::MiniSAT => BTOR_SAT_ENGINE_MINISAT,
+                    SatEngine::PicoSAT => BTOR_SAT_ENGINE_PICOSAT,
                 };
-                let s = CString::new(s).unwrap();
-                unsafe { boolector_set_sat_solver(self.as_raw(), s.as_ptr() as *const c_char) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SAT_ENGINE, val) }
             },
             BtorOption::AutoCleanup(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_AUTO_CLEANUP, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_AUTO_CLEANUP, if b { 1 } else { 0 }) }
             },
             BtorOption::PrettyPrint(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PRETTY_PRINT, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PRETTY_PRINT, if b { 1 } else { 0 }) }
             },
             BtorOption::Seed(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SEED, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SEED, u) }
             },
             BtorOption::RewriteLevel(rl) => {
                 let val = match rl {
@@ -140,74 +154,79 @@ impl Btor {
                     RewriteLevel::More => 2,
                     RewriteLevel::Full => 3,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_REWRITE_LEVEL, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_REWRITE_LEVEL, val) }
             },
             BtorOption::SkeletonPreproc(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SKELETON_PREPROC, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SKELETON_PREPROC, if b { 1 } else { 0 }) }
             },
             BtorOption::Ackermann(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_ACKERMANN, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_ACKERMANN, if b { 1 } else { 0 }) }
             },
-            BtorOption::BetaReduceAll(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_BETA_REDUCE_ALL, if b { 1 } else { 0 }) }
+            BtorOption::BetaReduce(b) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_BETA_REDUCE, if b { 1 } else { 0 }) }
             },
             BtorOption::EliminateSlices(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_ELIMINATE_SLICES, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_ELIMINATE_SLICES, if b { 1 } else { 0 }) }
             },
             BtorOption::VariableSubst(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_VAR_SUBST, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_VAR_SUBST, if b { 1 } else { 0 }) }
             },
             BtorOption::UnconstrainedOpt(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_UCOPT, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_UCOPT, if b { 1 } else { 0 }) }
             },
             BtorOption::MergeLambdas(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_MERGE_LAMBDAS, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_MERGE_LAMBDAS, if b { 1 } else { 0 }) }
             },
             BtorOption::ExtractLambdas(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_EXTRACT_LAMBDAS, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_EXTRACT_LAMBDAS, if b { 1 } else { 0 }) }
             },
             BtorOption::Normalize(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_NORMALIZE, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_NORMALIZE, if b { 1 } else { 0 }) }
             },
             BtorOption::NormalizeAdd(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_NORMALIZE_ADD, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_NORMALIZE_ADD, if b { 1 } else { 0 }) }
             },
             BtorOption::FunPreProp(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_PREPROP, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_PREPROP, if b { 1 } else { 0 }) }
             },
             BtorOption::FunPreSLS(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_PRESLS, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_PRESLS, if b { 1 } else { 0 }) }
             },
             BtorOption::FunDualProp(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_DUAL_PROP, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_DUAL_PROP, if b { 1 } else { 0 }) }
             },
             BtorOption::FunDualPropQsortOrder(dpqo) => {
                 let val = match dpqo {
-                    DualPropQsortOrder::Just => 0,
-                    DualPropQsortOrder::Asc => 1,
-                    DualPropQsortOrder::Desc => 2,
+                    DualPropQsortOrder::Just => BTOR_DP_QSORT_JUST,
+                    DualPropQsortOrder::Asc => BTOR_DP_QSORT_ASC,
+                    DualPropQsortOrder::Desc => BTOR_DP_QSORT_DESC,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_DUAL_PROP_QSORT, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_DUAL_PROP_QSORT, val) }
             },
             BtorOption::FunJustification(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_JUST, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_JUST, if b { 1 } else { 0 }) }
             },
             BtorOption::FunJustificationHeuristic(jh) => {
                 let val = match jh {
-                    JustificationHeuristic::Left => 0,
-                    JustificationHeuristic::MinApp => 1,
-                    JustificationHeuristic::MinDepth => 2,
+                    JustificationHeuristic::Left => BTOR_JUST_HEUR_BRANCH_LEFT,
+                    JustificationHeuristic::MinApp => BTOR_JUST_HEUR_BRANCH_MIN_APP,
+                    JustificationHeuristic::MinDepth => BTOR_JUST_HEUR_BRANCH_MIN_DEP,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_JUST_HEURISTIC, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_JUST_HEURISTIC, val) }
             },
             BtorOption::FunLazySynthesize(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_LAZY_SYNTHESIZE, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_LAZY_SYNTHESIZE, if b { 1 } else { 0 }) }
             },
-            BtorOption::FunEagerLemmas(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_FUN_EAGER_LEMMAS, if b { 1 } else { 0 }) }
+            BtorOption::FunEagerLemmas(el) => {
+                let val = match el {
+                    EagerLemmas::None => BTOR_FUN_EAGER_LEMMAS_NONE,
+                    EagerLemmas::Conf => BTOR_FUN_EAGER_LEMMAS_CONF,
+                    EagerLemmas::All => BTOR_FUN_EAGER_LEMMAS_ALL,
+                };
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_EAGER_LEMMAS, val) }
             },
             BtorOption::SLSNumFlips(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_NFLIPS, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_NFLIPS, u) }
             },
             BtorOption::SLSMoveStrategy(sms) => {
                 let val = match sms {
@@ -217,94 +236,130 @@ impl Btor {
                     SLSMoveStrategy::BestSameMove => 3,
                     SLSMoveStrategy::AlwaysProp => 4,
                 };
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_STRATEGY, val) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_STRATEGY, val) }
             },
             BtorOption::SLSJustification(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_JUST, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_JUST, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSGroupWiseMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_GW, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_GW, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSRangeWiseMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_RANGE, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RANGE, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSSegmentWiseMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_SEGMENT, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_SEGMENT, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSRandomWalkMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_RAND_WALK, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RAND_WALK, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSRandomWalkProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_PROB_MOVE_RAND_WALK, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_PROB_MOVE_RAND_WALK, u) }
             },
             BtorOption::SLSRandomizeAll(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_RAND_ALL, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RAND_ALL, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSRandomizeRange(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_RAND_RANGE, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RAND_RANGE, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSPropagationMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_PROP, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSPropagationMovesNumProp(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_PROP_N_PROP, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_N_PROP, u) }
             },
             BtorOption::SLSPropagationMovesNumRegular(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_PROP_N_SLS, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_N_SLS, u) }
             },
             BtorOption::SLSForceRandomWalks(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_PROP_FORCE_RW, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_FORCE_RW, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSIncMoveTest(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_MOVE_INC_MOVE_TEST, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_INC_MOVE_TEST, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSRestarts(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_USE_RESTARTS, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_USE_RESTARTS, if b { 1 } else { 0 }) }
             },
             BtorOption::SLSBanditScheme(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_SLS_USE_BANDIT, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_USE_BANDIT, if b { 1 } else { 0 }) }
             },
             BtorOption::PropNumSteps(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_NPROPS, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_NPROPS, u) }
             },
             BtorOption::PropRestarts(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_USE_RESTARTS, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_USE_RESTARTS, if b { 1 } else { 0 }) }
             },
             BtorOption::PropBanditScheme(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_USE_BANDIT, if b { 1 } else { 0 }) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_USE_BANDIT, if b { 1 } else { 0 }) }
             },
-            BtorOption::PropPathSelectionMode(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PATH_SEL, u) }
+            BtorOption::PropPathSelectionMode(pathsel) => {
+                let val = match pathsel {
+                    PropPathSelection::Controlling => BTOR_PROP_PATH_SEL_CONTROLLING,
+                    PropPathSelection::Essential => BTOR_PROP_PATH_SEL_ESSENTIAL,
+                    PropPathSelection::Random => BTOR_PROP_PATH_SEL_RANDOM,
+                };
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PATH_SEL, val) }
             },
             BtorOption::PropInvValueProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_USE_INV_VALUE, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_USE_INV_VALUE, u) }
             },
             BtorOption::PropFlipConditionProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_FLIP_COND, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_FLIP_COND, u) }
             },
             BtorOption::PropFlipConditionProbabilityConstant(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_FLIP_COND_CONST, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_FLIP_COND_CONST, u) }
             },
             BtorOption::PropFlipConditionNumPaths(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_FLIP_COND_CONST_NPATHSEL, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_FLIP_COND_CONST_NPATHSEL, u) }
             },
             BtorOption::PropFlipConditionProbabilityConstantDelta(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_FLIP_COND_CONST_DELTA, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_FLIP_COND_CONST_DELTA, u) }
             },
             BtorOption::PropSliceKeepDCProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_SLICE_KEEP_DC, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_SLICE_KEEP_DC, u) }
             },
             BtorOption::PropConcatFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_CONC_FLIP, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_CONC_FLIP, u) }
             },
             BtorOption::PropSliceFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_SLICE_FLIP, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_SLICE_FLIP, u) }
             },
             BtorOption::PropEqFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_EQ_FLIP, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_EQ_FLIP, u) }
             },
             BtorOption::PropAndFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BtorOption_BTOR_OPT_PROP_PROB_AND_FLIP, u) }
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_AND_FLIP, u) }
+            },
+            BtorOption::AIGPropUseRestarts(b) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_AIGPROP_USE_RESTARTS, if b { 1 } else { 0 }) }
+            },
+            BtorOption::AIGPropQuantSynthesis(pqs) => {
+                let val = match pqs {
+                    AIGPropQuantSynthesis::None => BTOR_QUANT_SYNTH_NONE,
+                    AIGPropQuantSynthesis::EL => BTOR_QUANT_SYNTH_EL,
+                    AIGPropQuantSynthesis::ELMC => BTOR_QUANT_SYNTH_ELMC,
+                    AIGPropQuantSynthesis::ELELMC => BTOR_QUANT_SYNTH_EL_ELMC,
+                    AIGPropQuantSynthesis::ELMR => BTOR_QUANT_SYNTH_ELMR,
+                };
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_SYNTH, val) }
+            },
+            BtorOption::AIGPropQuantDualSolver(b) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_DUAL_SOLVER, if b { 1 } else { 0 }) }
+            },
+            BtorOption::AIGPropQuantSynthLimit(u) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_SYNTH_LIMIT, u) }
+            },
+            BtorOption::AIGPropSynthQI(b) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_SYNTH_QI, if b { 1 } else { 0 }) }
+            },
+            BtorOption::AIGPropQuantDER(b) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_DER, if b { 1 } else { 0 }) }
+            },
+            BtorOption::AIGPropQuantCER(b) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_CER, if b { 1 } else { 0 }) }
+            },
+            BtorOption::AIGPropQuantMiniscope(b) => {
+                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_MINISCOPE, if b { 1 } else { 0 }) }
             },
         }
     }

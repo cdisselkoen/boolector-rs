@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/boolector.svg)](https://crates.io/crates/boolector)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/cdisselkoen/boolector-rs/master/LICENSE)
 
-Safe high-level bindings for the [Boolector] SMT solver, version 3.0.0.
+Safe high-level bindings for the [Boolector] SMT solver, version 3.1.0.
 
 ## Installation
 
@@ -15,7 +15,7 @@ boolector = "0.2.0"
 ```
 
 This crate relies on the [`boolector-sys`] crate, so you will need to follow
-its directions for installation as well. In particular, Boolector 3.0.0 must
+its directions for installation as well. In particular, Boolector 3.1.0 must
 be available on the system as a shared library.
 
 [Boolector]: https://boolector.github.io

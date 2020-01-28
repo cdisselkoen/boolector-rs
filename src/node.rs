@@ -399,10 +399,22 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     ///
     /// For a code example, see [`BV::new()`](struct.BV.html#method.new).
     pub fn get_a_solution(&self) -> BVSolution {
-        BVSolution::from_raw(
-            &self.btor.borrow(),
+        use crate::option::{BtorOption, NumberFormat};
+        // Workaround for https://github.com/Boolector/boolector/issues/79:
+        // set OUTPUT_NUMBER_FORMAT to binary just for this call, restore old
+        // value on method exit
+        let old_output_format = unsafe { boolector_get_opt(self.btor.borrow().as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT) };
+        self.btor.borrow().set_opt(BtorOption::OutputNumberFormat(NumberFormat::Binary));
+
+        let solution = BVSolution::from_raw(
+            self.btor.borrow(),
             unsafe { boolector_bv_assignment(self.btor.borrow().as_raw(), self.node) },
-        )
+        );
+
+        // restore the old value of the OUTPUT_NUMBER_FORMAT setting
+        unsafe { boolector_set_opt(self.btor.borrow().as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT, old_output_format) };
+
+        solution
     }
 
     /// Get the `Btor` which this `BV` belongs to
@@ -1151,17 +1163,6 @@ impl<R: Borrow<Btor> + Clone> Array<R> {
     /// width `element_width`. The `Array` will be initialized so that all
     /// indices map to the same constant value `val`.
     ///
-    /// The `symbol`, if present, will be used to identify the `Array` when
-    /// printing a model or dumping to file. It must be unique if it is present.
-    ///
-    /// Note: This function is not available in Boolector 3.0.0 as released, and
-    /// will cause linker errors if you attempt to use it with the released
-    /// version of Boolector 3.0.0. It was added to Boolector's git master in
-    /// September 2019 (commit `a1b1408`), and will presumably be part of any
-    /// subsequent releases of Boolector. Until the next Boolector release, to
-    /// use this function you will need to build an appropriately recent version
-    /// of Boolector from source.
-    ///
     /// # Example
     ///
     /// ```
@@ -1175,7 +1176,7 @@ impl<R: Borrow<Btor> + Clone> Array<R> {
     /// // `arr` is an `Array` which maps 8-bit values to 8-bit values.
     /// // It is initialized such that all entries are the constant `42`.
     /// let fortytwo = BV::from_u32(btor.clone(), 42, 8);
-    /// let arr = Array::new_initialized(btor.clone(), 8, 8, Some("arr"), &fortytwo);
+    /// let arr = Array::new_initialized(btor.clone(), 8, 8, &fortytwo);
     ///
     /// // Reading the value at any index should produce `42`.
     /// let read_bv = arr.read(&BV::from_u32(btor.clone(), 61, 8));
@@ -1196,18 +1197,11 @@ impl<R: Borrow<Btor> + Clone> Array<R> {
     /// assert_eq!(btor.sat(), SolverResult::Sat);
     /// //assert_eq!(read_bv.get_a_solution().as_u64().unwrap(), 42);
     /// ```
-    pub fn new_initialized(btor: R, index_width: u32, element_width: u32, symbol: Option<&str>, val: &BV<R>) -> Self {
+    pub fn new_initialized(btor: R, index_width: u32, element_width: u32, val: &BV<R>) -> Self {
         let index_sort = Sort::bitvector(btor.clone(), index_width);
         let element_sort = Sort::bitvector(btor.clone(), element_width);
         let array_sort = Sort::array(btor.clone(), &index_sort, &element_sort);
-        let node = match symbol {
-            None => unsafe { boolector_const_array(btor.borrow().as_raw(), array_sort.as_raw(), val.node, std::ptr::null()) },
-            Some(symbol) => {
-                let cstring = CString::new(symbol).unwrap();
-                let symbol = cstring.as_ptr() as *const c_char;
-                unsafe { boolector_const_array(btor.borrow().as_raw(), array_sort.as_raw(), val.node, symbol) }
-            },
-        };
+        let node = unsafe { boolector_const_array(btor.borrow().as_raw(), array_sort.as_raw(), val.node) };
         Self {
             btor,
             node,
@@ -1340,6 +1334,9 @@ pub struct BVSolution {
 }
 
 impl BVSolution {
+    /// expects an `assignment` in _binary_ (01x) format
+    ///
+    /// relevant: https://github.com/Boolector/boolector/issues/79
     fn from_raw(btor: &Btor, assignment: *const c_char) -> Self {
         Self {
             assignment: {
@@ -1425,7 +1422,9 @@ impl BVSolution {
         if binary_string.len() > 64 {
             None
         } else {
-            Some(u64::from_str_radix(&binary_string, 2).unwrap())
+            Some(u64::from_str_radix(&binary_string, 2)
+                .unwrap_or_else(|e| panic!("Got the following error while trying to parse {:?} as a binary string: {}", binary_string, e))
+            )
         }
     }
 

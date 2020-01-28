@@ -9,12 +9,15 @@ pub enum BtorOption {
     /// Enable/disable incremental mode. Note that the Boolector 3.0.0 docs say
     /// that "disabling incremental usage is currently not supported".
     Incremental(bool),
-    /// Enable/disable incremental mode for the parsing of SMT-LIB v1 input.
+    /// Set incremental mode for SMT-LIB v1 input. The default is
+    /// `IncrementalSMT1::Basic`.
     IncrementalSMT1(IncrementalSMT1),
+    /// Input file format. The default is `InputFileFormat::Autodetect`.
+    InputFileFormat(InputFileFormat),
     /// Format to output numbers in. The default is `NumberFormat::Binary`.
     OutputNumberFormat(NumberFormat),
     /// Output file format. The default is `FileFormat::BTOR`.
-    OutputFileFormat(FileFormat),
+    OutputFileFormat(OutputFileFormat),
     /// Solver timeout. If `Some`, then operations lasting longer than the given
     /// `Duration` will be aborted and return `SolverResult::Unknown`.
     ///
@@ -33,6 +36,8 @@ pub enum BtorOption {
     /// Seed for Boolector's internal random number generator. The default is 0.
     Seed(u32),
     /// Rewrite level. The default is `RewriteLevel::Full`.
+    ///
+    /// Boolector's docs say to not change this setting after creating expressions.
     RewriteLevel(RewriteLevel),
     /// Enable/disable skeleton preprocessing during simplification.
     SkeletonPreproc(bool),
@@ -41,7 +46,7 @@ pub enum BtorOption {
     Ackermann(bool),
     /// Enable/disable the eager elimination of lambda expressions via beta
     /// reduction.
-    BetaReduceAll(bool),
+    BetaReduce(bool),
     /// Enable/disable slice elimination on bit vector variables.
     EliminateSlices(bool),
     /// Enable/disable variable substitution during simplification.
@@ -78,7 +83,7 @@ pub enum BtorOption {
     /// expressions.
     FunLazySynthesize(bool),
     /// For `SolverEngine::Fun`, enable/disable eager generation of lemmas.
-    FunEagerLemmas(bool),
+    FunEagerLemmas(EagerLemmas),
     /// For `SolverEngine::SLS`, set the number of bit flips used as a limit.
     /// `0` indicates no limit.
     SLSNumFlips(u32),
@@ -147,9 +152,9 @@ pub enum BtorOption {
     /// selecting root constraints. If disabled, candidate root constraints are
     /// selected randomly.
     PropBanditScheme(bool),
-    /// For `SolverEngine::Prop`, choose the mode for path selection. Boolector's
-    /// 3.0.0 docs don't say what values are allowed here or what they do.
-    PropPathSelectionMode(u32),
+    /// For `SolverEngine::Prop`, choose the mode for path selection.
+    /// The default is `PropPathSelection::Essential`.
+    PropPathSelectionMode(PropPathSelection),
     /// For `SolverEngine::Prop`, set the probability with which to choose
     /// inverse values over consistent values.
     PropInvValueProbability(u32),
@@ -191,6 +196,28 @@ pub enum BtorOption {
     /// assignment of the don't care bits of the selected node with at most one
     /// of its bits flipped in case of an `and` operation.
     PropAndFlipProbability(u32),
+    /// For `SolverEngine::AIGProp`, enable/disable restarts.
+    AIGPropUseRestarts(bool),
+    /// For `SolverEngine::AIGProp`, select the synthesis mode for Skolem
+    /// functions.
+    AIGPropQuantSynthesis(AIGPropQuantSynthesis),
+    /// For `SolverEngine::AIGProp`, enable/disable solving the dual (negated)
+    /// version of the quantified bit-vector formula.
+    AIGPropQuantDualSolver(bool),
+    /// For `SolverEngine::AIGProp`, set the limit of enumerated expressions
+    /// for the enumerative learning synthesis algorithm.
+    AIGPropQuantSynthLimit(u32),
+    /// For `SolverEngine::AIGProp`, enable/disable generalization of
+    /// quantifier instantiations via enumerative learning.
+    AIGPropSynthQI(bool),
+    /// For `SolverEngine::AIGProp`, enable/disable destructive equality
+    /// resolution simplification.
+    AIGPropQuantDER(bool),
+    /// For `SolverEngine::AIGProp`, enable/disable constructive equality
+    /// resolution simplification.
+    AIGPropQuantCER(bool),
+    /// For `SolverEngine::AIGProp`, enable/disable miniscoping.
+    AIGPropQuantMiniscope(bool),
 }
 
 pub enum ModelGen {
@@ -203,12 +230,18 @@ pub enum ModelGen {
 }
 
 pub enum IncrementalSMT1 {
-    /// Disable incremental mode
-    Disabled,
     /// Stop after first satisfiable formula
-    EagerStop,
+    Basic,
     /// Solve all formulas
-    SolveAll,
+    Continue,
+}
+
+pub enum InputFileFormat {
+    Autodetect,
+    Btor,
+    Btor2,
+    SMTLIBv1,
+    SMTLIBv2,
 }
 
 pub enum NumberFormat {
@@ -217,22 +250,39 @@ pub enum NumberFormat {
     Hexadecimal,
 }
 
-pub enum FileFormat {
+pub enum OutputFileFormat {
     BTOR,
-    SMTLIBv1,
+    BTOR2,
     SMTLIBv2,
+    AigerASCII,
+    AigerBinary,
 }
 
 pub enum SolverEngine {
+    /// Default engine for all combinations of QF_AUFBV; uses lemmas on demand
+    /// for QF_AUFBV and eager bit-blasting for QF_BV
     Fun,
+    /// Score-based local search QF_BV engine
     SLS,
+    /// Propagation-based local search QF_BV engine
     Prop,
+    /// Propagation-based local search QF_BV engine that operates on the bit-blasted formula (the AIG layer)
+    AIGProp,
+    /// Quantifier engine (BV only)
+    Quant,
 }
 
 pub enum SatEngine {
+    /// CaDiCaL
+    CaDiCaL,
+    /// CryptoMiniSat
+    CMS,
+    /// Lingeling
     Lingeling,
-    PicoSAT,
+    /// MiniSAT
     MiniSAT,
+    /// PicoSAT
+    PicoSAT,
 }
 
 pub enum RewriteLevel {
@@ -264,6 +314,17 @@ pub enum JustificationHeuristic {
     MinDepth,
 }
 
+pub enum EagerLemmas {
+    /// Do not generate lemmas eagerly (generate one single lemma per refinement
+    /// iteration)
+    None,
+    /// Only generate lemmas eagerly until the first conflict dependent on
+    /// another conflict is found
+    Conf,
+    /// In each refinement iterations, generate lemmas for all conflicts
+    All,
+}
+
 pub enum SLSMoveStrategy {
     /// Always choose the best score improving move
     BestMove,
@@ -277,4 +338,28 @@ pub enum SLSMoveStrategy {
     /// Always choose propagation move, and recover with SLS move in case of
     /// conflict
     AlwaysProp,
+}
+
+pub enum PropPathSelection {
+    /// Select path based on controlling inputs
+    Controlling,
+    /// Select path based on essential inputs
+    Essential,
+    /// Select path based on random inputs
+    Random,
+}
+
+pub enum AIGPropQuantSynthesis {
+    /// Do not synthesize skolem functions (use model values for instantiation)
+    None,
+    /// Use enumerative learning to synthesize skolem functions
+    EL,
+    /// Use enumerative learning modulo the predicates in the cone of influence
+    /// of the existential variables to synthesize skolem functions
+    ELMC,
+    /// Chain the `EL` and `ELMC` approaches to synthesize skolem functions
+    ELELMC,
+    /// Use enumerative learning modulo the given root constraints to synthesize
+    /// skolem functions
+    ELMR,
 }
