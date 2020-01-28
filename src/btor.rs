@@ -5,12 +5,12 @@ use crate::option::BtorOption;
 use crate::timeout::{self, TimeoutState};
 use std::borrow::Borrow;
 use std::ffi::{CStr, CString};
+use std::fmt;
 use std::os::raw::{c_char, c_void};
 use std::pin::Pin;
 
 /// A `Btor` represents an instance of the Boolector solver.
 /// Each `BV` and `Array` is created in a particular `Btor` instance.
-#[derive(Debug)]
 pub struct Btor {
     btor: *mut boolector_sys::Btor,
     timeout_state: Pin<Box<timeout::TimeoutState>>,  // needs to be `Pin`, because the Boolector callback will expect to continue to find the `TimeoutState` at the same location
@@ -25,6 +25,12 @@ impl PartialEq for Btor {
 }
 
 impl Eq for Btor { }
+
+impl fmt::Debug for Btor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<btor {:?}>", self.btor)
+    }
+}
 
 /// According to
 /// https://groups.google.com/forum/#!msg/boolector/itYGgJxU3mY/AC2O0898BAAJ,
