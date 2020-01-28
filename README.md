@@ -31,3 +31,5 @@ Full documentation, including examples, can be found at
 These bindings are not necessarily complete; there may be some features
 present in [`boolector-sys`] which are not directly exposed here, e.g.,
 uninterpreted functions (`boolector_uf()`). Contributions are welcome.
+
+This crate currently requires Rust 1.39+.
