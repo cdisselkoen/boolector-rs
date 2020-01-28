@@ -335,14 +335,19 @@ impl Btor {
     /// // State is now unsatisfiable
     /// assert_eq!(btor.sat(), SolverResult::Unsat);
     ///
-    /// // If we set the solver timeout to something extremely
-    /// // high (say, 200 sec), we should still get the same result
+    /// // Repeat the first step above with the solver timeout set to something
+    /// // extremely high (say, 200 sec) - should still be `Sat`
     /// # use std::time::Duration;
+    /// let btor = Rc::new(Btor::new());
+    /// btor.set_opt(BtorOption::Incremental(true));
     /// btor.set_opt(BtorOption::SolverTimeout(Some(Duration::from_secs(200))));
-    /// assert_eq!(btor.sat(), SolverResult::Unsat);
+    /// let foo = BV::new(btor.clone(), 8, Some("foo"));
+    /// foo.ugt(&BV::from_u32(btor.clone(), 3, 8)).assert();
+    /// assert_eq!(btor.sat(), SolverResult::Sat);
     ///
-    /// // But, if we set the solver timeout to something
-    /// // extremely low (say, 2 ns), we'll get `SolverResult::Unknown`
+    /// // But, if we make the second assertion and then set the solver timeout to
+    /// // something extremely low (say, 2 ns), we'll get `SolverResult::Unknown`
+    /// foo.ugt(&BV::from_u32(btor.clone(), 5, 8)).assert();
     /// btor.set_opt(BtorOption::SolverTimeout(Some(Duration::from_nanos(2))));
     /// assert_eq!(btor.sat(), SolverResult::Unknown);
     /// ```
