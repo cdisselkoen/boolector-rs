@@ -13,7 +13,7 @@ use std::pin::Pin;
 /// Each `BV` and `Array` is created in a particular `Btor` instance.
 pub struct Btor {
     btor: *mut boolector_sys::Btor,
-    timeout_state: Pin<Box<timeout::TimeoutState>>,  // needs to be `Pin`, because the Boolector callback will expect to continue to find the `TimeoutState` at the same location
+    pub(crate) timeout_state: Pin<Box<timeout::TimeoutState>>,  // needs to be `Pin`, because the Boolector callback will expect to continue to find the `TimeoutState` at the same location
 }
 
 // Two `Btor`s are equal if they have the same underlying Btor pointer.

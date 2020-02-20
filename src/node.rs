@@ -399,20 +399,23 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     ///
     /// For a code example, see [`BV::new()`](struct.BV.html#method.new).
     pub fn get_a_solution(&self) -> BVSolution {
+        let btor = self.btor.borrow();
         use crate::option::{BtorOption, NumberFormat};
         // Workaround for https://github.com/Boolector/boolector/issues/79:
         // set OUTPUT_NUMBER_FORMAT to binary just for this call, restore old
         // value on method exit
-        let old_output_format = unsafe { boolector_get_opt(self.btor.borrow().as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT) };
-        self.btor.borrow().set_opt(BtorOption::OutputNumberFormat(NumberFormat::Binary));
+        let old_output_format = unsafe { boolector_get_opt(btor.as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT) };
+        btor.set_opt(BtorOption::OutputNumberFormat(NumberFormat::Binary));
+
+        btor.timeout_state.restart_timer();
 
         let solution = BVSolution::from_raw(
-            self.btor.borrow(),
+            btor,
             unsafe { boolector_bv_assignment(self.btor.borrow().as_raw(), self.node) },
         );
 
         // restore the old value of the OUTPUT_NUMBER_FORMAT setting
-        unsafe { boolector_set_opt(self.btor.borrow().as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT, old_output_format) };
+        unsafe { boolector_set_opt(btor.as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT, old_output_format) };
 
         solution
     }
