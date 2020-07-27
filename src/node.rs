@@ -91,7 +91,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
                 let cstring = CString::new(symbol).unwrap();
                 let symbol = cstring.as_ptr() as *const c_char;
                 unsafe { boolector_var(btor.borrow().as_raw(), sort.as_raw(), symbol) }
-            },
+            }
         };
         Self { btor, node }
     }
@@ -460,7 +460,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
                 let cstring = CString::new(symbol).unwrap();
                 let symbol = cstring.as_ptr() as *const c_char;
                 unsafe { boolector_set_symbol(self.btor.borrow().as_raw(), self.node, symbol) }
-            },
+            }
         }
     }
 
@@ -1160,7 +1160,7 @@ impl<R: Borrow<Btor> + Clone> Array<R> {
                 let cstring = CString::new(symbol).unwrap();
                 let symbol = cstring.as_ptr() as *const c_char;
                 unsafe { boolector_array(btor.borrow().as_raw(), array_sort.as_raw(), symbol) }
-            },
+            }
         };
         Self { btor, node }
     }

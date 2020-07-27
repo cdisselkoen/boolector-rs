@@ -64,7 +64,7 @@ impl Btor {
                     ModelGen::All => 2,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_MODEL_GEN, val) }
-            },
+            }
             BtorOption::Incremental(b) => unsafe {
                 boolector_set_opt(self.as_raw(), BTOR_OPT_INCREMENTAL, if b { 1 } else { 0 })
             },
@@ -74,7 +74,7 @@ impl Btor {
                     IncrementalSMT1::Continue => BTOR_INCREMENTAL_SMT1_CONTINUE,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_INCREMENTAL_SMT1, val) }
-            },
+            }
             BtorOption::InputFileFormat(iff) => {
                 let val = match iff {
                     InputFileFormat::Autodetect => BTOR_INPUT_FORMAT_NONE,
@@ -92,24 +92,23 @@ impl Btor {
                     NumberFormat::Hexadecimal => BTOR_OUTPUT_BASE_HEX,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_OUTPUT_NUMBER_FORMAT, val) }
-            },
+            }
             BtorOption::OutputFileFormat(off) => {
                 let val = match off {
                     OutputFileFormat::BTOR => BTOR_OUTPUT_FORMAT_BTOR,
-                    OutputFileFormat::BTOR2 => BTOR_OUTPUT_FORMAT_BTOR2,
                     OutputFileFormat::SMTLIBv2 => BTOR_OUTPUT_FORMAT_SMT2,
                     OutputFileFormat::AigerASCII => BTOR_OUTPUT_FORMAT_AIGER_ASCII,
                     OutputFileFormat::AigerBinary => BTOR_OUTPUT_FORMAT_AIGER_BINARY,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_OUTPUT_FORMAT, val) }
-            },
+            }
             BtorOption::SolverTimeout(duration) => {
                 self.timeout_state.set_timeout_duration(duration);
                 match duration {
                     None => {
                         // remove any existing timeout
                         unsafe { boolector_set_term(self.as_raw(), None, std::ptr::null_mut()) }
-                    },
+                    }
                     Some(_) => {
                         let ptr_to_ts: Pin<&TimeoutState> = (&self.timeout_state).as_ref();
                         let raw_ptr_to_ts: *const TimeoutState =
@@ -122,9 +121,9 @@ impl Btor {
                                 void_ptr_to_ts,
                             )
                         }
-                    },
+                    }
                 }
-            },
+            }
             BtorOption::SolverEngine(se) => {
                 let val = match se {
                     SolverEngine::Fun => BTOR_ENGINE_FUN,
@@ -134,7 +133,7 @@ impl Btor {
                     SolverEngine::Quant => BTOR_ENGINE_QUANT,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_ENGINE, val) }
-            },
+            }
             BtorOption::SatEngine(se) => {
                 let val = match se {
                     SatEngine::CaDiCaL => BTOR_SAT_ENGINE_CADICAL,
@@ -144,6 +143,9 @@ impl Btor {
                     SatEngine::PicoSAT => BTOR_SAT_ENGINE_PICOSAT,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SAT_ENGINE, val) }
+            }
+            BtorOption::AutoCleanup(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_AUTO_CLEANUP, if b { 1 } else { 0 })
             },
             BtorOption::AutoCleanup(b) => unsafe {
                 boolector_set_opt(self.as_raw(), BTOR_OPT_AUTO_CLEANUP, if b { 1 } else { 0 })
@@ -160,6 +162,13 @@ impl Btor {
                     RewriteLevel::Full => 3,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_REWRITE_LEVEL, val) }
+            }
+            BtorOption::SkeletonPreproc(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SKELETON_PREPROC,
+                    if b { 1 } else { 0 },
+                )
             },
             BtorOption::SkeletonPreproc(b) => unsafe {
                 boolector_set_opt(
@@ -364,6 +373,9 @@ impl Btor {
                     PropPathSelection::Random => BTOR_PROP_PATH_SEL_RANDOM,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PATH_SEL, val) }
+            }
+            BtorOption::PropInvValueProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_USE_INV_VALUE, u)
             },
             BtorOption::PropInvValueProbability(u) => unsafe {
                 boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_USE_INV_VALUE, u)
