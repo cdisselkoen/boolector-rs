@@ -252,7 +252,6 @@ pub enum NumberFormat {
 
 pub enum OutputFileFormat {
     BTOR,
-    BTOR2,
     SMTLIBv2,
     AigerASCII,
     AigerBinary,

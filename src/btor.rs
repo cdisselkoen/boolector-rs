@@ -96,7 +96,6 @@ impl Btor {
             BtorOption::OutputFileFormat(off) => {
                 let val = match off {
                     OutputFileFormat::BTOR => BTOR_OUTPUT_FORMAT_BTOR,
-                    OutputFileFormat::BTOR2 => BTOR_OUTPUT_FORMAT_BTOR2,
                     OutputFileFormat::SMTLIBv2 => BTOR_OUTPUT_FORMAT_SMT2,
                     OutputFileFormat::AigerASCII => BTOR_OUTPUT_FORMAT_AIGER_ASCII,
                     OutputFileFormat::AigerBinary => BTOR_OUTPUT_FORMAT_AIGER_BINARY,
