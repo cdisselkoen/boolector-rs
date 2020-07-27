@@ -50,15 +50,15 @@ pub extern "C" fn callback(void_ptr_to_ts: *mut std::os::raw::c_void) -> i32 {
                 None => {
                     // somehow negative time has elapsed since operation started?  Keep going
                     0
-                }
+                },
                 Some(duration) => {
                     if duration > timeout_duration {
                         1 // terminate
                     } else {
                         0 // keep going
                     }
-                }
+                },
             }
-        }
+        },
     }
 }
