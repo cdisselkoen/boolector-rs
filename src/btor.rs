@@ -1,8 +1,8 @@
-use boolector_sys::*;
 use crate::node::{Array, BV};
-use crate::option::*;
 use crate::option::BtorOption;
+use crate::option::*;
 use crate::timeout::{self, TimeoutState};
+use boolector_sys::*;
 use std::borrow::Borrow;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -13,7 +13,7 @@ use std::pin::Pin;
 /// Each `BV` and `Array` is created in a particular `Btor` instance.
 pub struct Btor {
     btor: *mut boolector_sys::Btor,
-    pub(crate) timeout_state: Pin<Box<timeout::TimeoutState>>,  // needs to be `Pin`, because the Boolector callback will expect to continue to find the `TimeoutState` at the same location
+    pub(crate) timeout_state: Pin<Box<timeout::TimeoutState>>, // needs to be `Pin`, because the Boolector callback will expect to continue to find the `TimeoutState` at the same location
 }
 
 // Two `Btor`s are equal if they have the same underlying Btor pointer.
@@ -24,7 +24,7 @@ impl PartialEq for Btor {
     }
 }
 
-impl Eq for Btor { }
+impl Eq for Btor {}
 
 impl fmt::Debug for Btor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -65,8 +65,8 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_MODEL_GEN, val) }
             },
-            BtorOption::Incremental(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_INCREMENTAL, if b { 1 } else { 0 }) }
+            BtorOption::Incremental(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_INCREMENTAL, if b { 1 } else { 0 })
             },
             BtorOption::IncrementalSMT1(ismt1) => {
                 let val = match ismt1 {
@@ -84,7 +84,7 @@ impl Btor {
                     InputFileFormat::SMTLIBv2 => BTOR_INPUT_FORMAT_SMT2,
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_INPUT_FORMAT, val) }
-            }
+            },
             BtorOption::OutputNumberFormat(nf) => {
                 let val = match nf {
                     NumberFormat::Binary => BTOR_OUTPUT_BASE_BIN,
@@ -112,9 +112,16 @@ impl Btor {
                     },
                     Some(_) => {
                         let ptr_to_ts: Pin<&TimeoutState> = (&self.timeout_state).as_ref();
-                        let raw_ptr_to_ts: *const TimeoutState = Pin::into_inner(ptr_to_ts) as *const TimeoutState;
+                        let raw_ptr_to_ts: *const TimeoutState =
+                            Pin::into_inner(ptr_to_ts) as *const TimeoutState;
                         let void_ptr_to_ts: *mut c_void = raw_ptr_to_ts as *mut c_void;
-                        unsafe { boolector_set_term(self.as_raw(), Some(timeout::callback), void_ptr_to_ts) }
+                        unsafe {
+                            boolector_set_term(
+                                self.as_raw(),
+                                Some(timeout::callback),
+                                void_ptr_to_ts,
+                            )
+                        }
                     },
                 }
             },
@@ -138,15 +145,13 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SAT_ENGINE, val) }
             },
-            BtorOption::AutoCleanup(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_AUTO_CLEANUP, if b { 1 } else { 0 }) }
+            BtorOption::AutoCleanup(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_AUTO_CLEANUP, if b { 1 } else { 0 })
             },
-            BtorOption::PrettyPrint(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PRETTY_PRINT, if b { 1 } else { 0 }) }
+            BtorOption::PrettyPrint(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PRETTY_PRINT, if b { 1 } else { 0 })
             },
-            BtorOption::Seed(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SEED, u) }
-            },
+            BtorOption::Seed(u) => unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SEED, u) },
             BtorOption::RewriteLevel(rl) => {
                 let val = match rl {
                     RewriteLevel::None => 0,
@@ -156,44 +161,56 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_REWRITE_LEVEL, val) }
             },
-            BtorOption::SkeletonPreproc(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SKELETON_PREPROC, if b { 1 } else { 0 }) }
+            BtorOption::SkeletonPreproc(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SKELETON_PREPROC,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::Ackermann(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_ACKERMANN, if b { 1 } else { 0 }) }
+            BtorOption::Ackermann(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_ACKERMANN, if b { 1 } else { 0 })
             },
-            BtorOption::BetaReduce(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_BETA_REDUCE, if b { 1 } else { 0 }) }
+            BtorOption::BetaReduce(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_BETA_REDUCE, if b { 1 } else { 0 })
             },
-            BtorOption::EliminateSlices(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_ELIMINATE_SLICES, if b { 1 } else { 0 }) }
+            BtorOption::EliminateSlices(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_ELIMINATE_SLICES,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::VariableSubst(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_VAR_SUBST, if b { 1 } else { 0 }) }
+            BtorOption::VariableSubst(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_VAR_SUBST, if b { 1 } else { 0 })
             },
-            BtorOption::UnconstrainedOpt(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_UCOPT, if b { 1 } else { 0 }) }
+            BtorOption::UnconstrainedOpt(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_UCOPT, if b { 1 } else { 0 })
             },
-            BtorOption::MergeLambdas(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_MERGE_LAMBDAS, if b { 1 } else { 0 }) }
+            BtorOption::MergeLambdas(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_MERGE_LAMBDAS, if b { 1 } else { 0 })
             },
-            BtorOption::ExtractLambdas(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_EXTRACT_LAMBDAS, if b { 1 } else { 0 }) }
+            BtorOption::ExtractLambdas(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_EXTRACT_LAMBDAS,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::Normalize(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_NORMALIZE, if b { 1 } else { 0 }) }
+            BtorOption::Normalize(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_NORMALIZE, if b { 1 } else { 0 })
             },
-            BtorOption::NormalizeAdd(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_NORMALIZE_ADD, if b { 1 } else { 0 }) }
+            BtorOption::NormalizeAdd(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_NORMALIZE_ADD, if b { 1 } else { 0 })
             },
-            BtorOption::FunPreProp(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_PREPROP, if b { 1 } else { 0 }) }
+            BtorOption::FunPreProp(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_PREPROP, if b { 1 } else { 0 })
             },
-            BtorOption::FunPreSLS(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_PRESLS, if b { 1 } else { 0 }) }
+            BtorOption::FunPreSLS(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_PRESLS, if b { 1 } else { 0 })
             },
-            BtorOption::FunDualProp(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_DUAL_PROP, if b { 1 } else { 0 }) }
+            BtorOption::FunDualProp(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_DUAL_PROP, if b { 1 } else { 0 })
             },
             BtorOption::FunDualPropQsortOrder(dpqo) => {
                 let val = match dpqo {
@@ -203,8 +220,8 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_DUAL_PROP_QSORT, val) }
             },
-            BtorOption::FunJustification(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_JUST, if b { 1 } else { 0 }) }
+            BtorOption::FunJustification(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_JUST, if b { 1 } else { 0 })
             },
             BtorOption::FunJustificationHeuristic(jh) => {
                 let val = match jh {
@@ -214,8 +231,12 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_JUST_HEURISTIC, val) }
             },
-            BtorOption::FunLazySynthesize(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_LAZY_SYNTHESIZE, if b { 1 } else { 0 }) }
+            BtorOption::FunLazySynthesize(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_FUN_LAZY_SYNTHESIZE,
+                    if b { 1 } else { 0 },
+                )
             },
             BtorOption::FunEagerLemmas(el) => {
                 let val = match el {
@@ -225,8 +246,8 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_FUN_EAGER_LEMMAS, val) }
             },
-            BtorOption::SLSNumFlips(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_NFLIPS, u) }
+            BtorOption::SLSNumFlips(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_NFLIPS, u)
             },
             BtorOption::SLSMoveStrategy(sms) => {
                 let val = match sms {
@@ -238,59 +259,103 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_STRATEGY, val) }
             },
-            BtorOption::SLSJustification(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_JUST, if b { 1 } else { 0 }) }
+            BtorOption::SLSJustification(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_JUST, if b { 1 } else { 0 })
             },
-            BtorOption::SLSGroupWiseMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_GW, if b { 1 } else { 0 }) }
+            BtorOption::SLSGroupWiseMoves(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_GW, if b { 1 } else { 0 })
             },
-            BtorOption::SLSRangeWiseMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RANGE, if b { 1 } else { 0 }) }
+            BtorOption::SLSRangeWiseMoves(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_MOVE_RANGE,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSSegmentWiseMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_SEGMENT, if b { 1 } else { 0 }) }
+            BtorOption::SLSSegmentWiseMoves(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_MOVE_SEGMENT,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSRandomWalkMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RAND_WALK, if b { 1 } else { 0 }) }
+            BtorOption::SLSRandomWalkMoves(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_MOVE_RAND_WALK,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSRandomWalkProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_PROB_MOVE_RAND_WALK, u) }
+            BtorOption::SLSRandomWalkProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_PROB_MOVE_RAND_WALK, u)
             },
-            BtorOption::SLSRandomizeAll(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RAND_ALL, if b { 1 } else { 0 }) }
+            BtorOption::SLSRandomizeAll(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_MOVE_RAND_ALL,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSRandomizeRange(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_RAND_RANGE, if b { 1 } else { 0 }) }
+            BtorOption::SLSRandomizeRange(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_MOVE_RAND_RANGE,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSPropagationMoves(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP, if b { 1 } else { 0 }) }
+            BtorOption::SLSPropagationMoves(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP, if b { 1 } else { 0 })
             },
-            BtorOption::SLSPropagationMovesNumProp(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_N_PROP, u) }
+            BtorOption::SLSPropagationMovesNumProp(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_N_PROP, u)
             },
-            BtorOption::SLSPropagationMovesNumRegular(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_N_SLS, u) }
+            BtorOption::SLSPropagationMovesNumRegular(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_N_SLS, u)
             },
-            BtorOption::SLSForceRandomWalks(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_PROP_FORCE_RW, if b { 1 } else { 0 }) }
+            BtorOption::SLSForceRandomWalks(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_MOVE_PROP_FORCE_RW,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSIncMoveTest(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_MOVE_INC_MOVE_TEST, if b { 1 } else { 0 }) }
+            BtorOption::SLSIncMoveTest(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_MOVE_INC_MOVE_TEST,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSRestarts(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_USE_RESTARTS, if b { 1 } else { 0 }) }
+            BtorOption::SLSRestarts(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_USE_RESTARTS,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::SLSBanditScheme(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_SLS_USE_BANDIT, if b { 1 } else { 0 }) }
+            BtorOption::SLSBanditScheme(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_SLS_USE_BANDIT,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::PropNumSteps(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_NPROPS, u) }
+            BtorOption::PropNumSteps(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_NPROPS, u)
             },
-            BtorOption::PropRestarts(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_USE_RESTARTS, if b { 1 } else { 0 }) }
+            BtorOption::PropRestarts(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_PROP_USE_RESTARTS,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::PropBanditScheme(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_USE_BANDIT, if b { 1 } else { 0 }) }
+            BtorOption::PropBanditScheme(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_PROP_USE_BANDIT,
+                    if b { 1 } else { 0 },
+                )
             },
             BtorOption::PropPathSelectionMode(pathsel) => {
                 let val = match pathsel {
@@ -300,38 +365,42 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PATH_SEL, val) }
             },
-            BtorOption::PropInvValueProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_USE_INV_VALUE, u) }
+            BtorOption::PropInvValueProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_USE_INV_VALUE, u)
             },
-            BtorOption::PropFlipConditionProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_FLIP_COND, u) }
+            BtorOption::PropFlipConditionProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_FLIP_COND, u)
             },
-            BtorOption::PropFlipConditionProbabilityConstant(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_FLIP_COND_CONST, u) }
+            BtorOption::PropFlipConditionProbabilityConstant(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_FLIP_COND_CONST, u)
             },
-            BtorOption::PropFlipConditionNumPaths(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_FLIP_COND_CONST_NPATHSEL, u) }
+            BtorOption::PropFlipConditionNumPaths(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_FLIP_COND_CONST_NPATHSEL, u)
             },
-            BtorOption::PropFlipConditionProbabilityConstantDelta(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_FLIP_COND_CONST_DELTA, u) }
+            BtorOption::PropFlipConditionProbabilityConstantDelta(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_FLIP_COND_CONST_DELTA, u)
             },
-            BtorOption::PropSliceKeepDCProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_SLICE_KEEP_DC, u) }
+            BtorOption::PropSliceKeepDCProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_SLICE_KEEP_DC, u)
             },
-            BtorOption::PropConcatFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_CONC_FLIP, u) }
+            BtorOption::PropConcatFlipProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_CONC_FLIP, u)
             },
-            BtorOption::PropSliceFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_SLICE_FLIP, u) }
+            BtorOption::PropSliceFlipProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_SLICE_FLIP, u)
             },
-            BtorOption::PropEqFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_EQ_FLIP, u) }
+            BtorOption::PropEqFlipProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_EQ_FLIP, u)
             },
-            BtorOption::PropAndFlipProbability(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_AND_FLIP, u) }
+            BtorOption::PropAndFlipProbability(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_PROP_PROB_AND_FLIP, u)
             },
-            BtorOption::AIGPropUseRestarts(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_AIGPROP_USE_RESTARTS, if b { 1 } else { 0 }) }
+            BtorOption::AIGPropUseRestarts(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_AIGPROP_USE_RESTARTS,
+                    if b { 1 } else { 0 },
+                )
             },
             BtorOption::AIGPropQuantSynthesis(pqs) => {
                 let val = match pqs {
@@ -343,23 +412,35 @@ impl Btor {
                 };
                 unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_SYNTH, val) }
             },
-            BtorOption::AIGPropQuantDualSolver(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_DUAL_SOLVER, if b { 1 } else { 0 }) }
+            BtorOption::AIGPropQuantDualSolver(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_QUANT_DUAL_SOLVER,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::AIGPropQuantSynthLimit(u) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_SYNTH_LIMIT, u) }
+            BtorOption::AIGPropQuantSynthLimit(u) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_SYNTH_LIMIT, u)
             },
-            BtorOption::AIGPropSynthQI(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_SYNTH_QI, if b { 1 } else { 0 }) }
+            BtorOption::AIGPropSynthQI(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_QUANT_SYNTH_QI,
+                    if b { 1 } else { 0 },
+                )
             },
-            BtorOption::AIGPropQuantDER(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_DER, if b { 1 } else { 0 }) }
+            BtorOption::AIGPropQuantDER(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_DER, if b { 1 } else { 0 })
             },
-            BtorOption::AIGPropQuantCER(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_CER, if b { 1 } else { 0 }) }
+            BtorOption::AIGPropQuantCER(b) => unsafe {
+                boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_CER, if b { 1 } else { 0 })
             },
-            BtorOption::AIGPropQuantMiniscope(b) => {
-                unsafe { boolector_set_opt(self.as_raw(), BTOR_OPT_QUANT_MINISCOPE, if b { 1 } else { 0 }) }
+            BtorOption::AIGPropQuantMiniscope(b) => unsafe {
+                boolector_set_opt(
+                    self.as_raw(),
+                    BTOR_OPT_QUANT_MINISCOPE,
+                    if b { 1 } else { 0 },
+                )
             },
         }
     }
@@ -498,7 +579,9 @@ impl Btor {
     pub fn duplicate(&self) -> Self {
         let duplicated = Self {
             btor: unsafe { boolector_clone(self.as_raw()) },
-            timeout_state: Pin::new(Box::new(TimeoutState::with_timeout_duration(self.timeout_state.get_timeout_duration()))),
+            timeout_state: Pin::new(Box::new(TimeoutState::with_timeout_duration(
+                self.timeout_state.get_timeout_duration(),
+            ))),
         };
         // we need to inform the callback about the new location of the `TimeoutState`
         let ptr_to_ts: Pin<&TimeoutState> = (&self.timeout_state).as_ref();
@@ -538,7 +621,10 @@ impl Btor {
     ///
     /// It's also fine to call this with an `Array` created for the given `Btor`
     /// itself, in which case you'll just get back `Some(array.clone())`.
-    pub fn get_matching_array<R: Borrow<Btor> + Clone>(btor: R, array: &Array<R>) -> Option<Array<R>> {
+    pub fn get_matching_array<R: Borrow<Btor> + Clone>(
+        btor: R,
+        array: &Array<R>,
+    ) -> Option<Array<R>> {
         let node = unsafe { boolector_match_node(btor.borrow().as_raw(), array.node) };
         if node.is_null() {
             None
@@ -626,7 +712,12 @@ impl Btor {
             // Seek back to the beginning of `tmpfile`
             assert_eq!(libc::fseek(tmpfile, 0, libc::SEEK_SET), 0);
             let mut buffer = Vec::with_capacity(length as usize);
-            libc::fread(buffer.as_mut_ptr() as *mut c_void, 1, length as usize, tmpfile);
+            libc::fread(
+                buffer.as_mut_ptr() as *mut c_void,
+                1,
+                length as usize,
+                tmpfile,
+            );
             libc::fclose(tmpfile);
             buffer.set_len(length as usize);
             String::from_utf8_unchecked(buffer)
@@ -643,7 +734,11 @@ impl Btor {
             }
             // Write the data to `tmpfile`
             let format_cstring = CString::new("btor").unwrap();
-            boolector_print_model(self.as_raw(), format_cstring.as_ptr() as *mut c_char, tmpfile);
+            boolector_print_model(
+                self.as_raw(),
+                format_cstring.as_ptr() as *mut c_char,
+                tmpfile,
+            );
             // Seek to the end of `tmpfile`
             assert_eq!(libc::fseek(tmpfile, 0, libc::SEEK_END), 0);
             // Get the length of `tmpfile`
@@ -654,7 +749,12 @@ impl Btor {
             // Seek back to the beginning of `tmpfile`
             assert_eq!(libc::fseek(tmpfile, 0, libc::SEEK_SET), 0);
             let mut buffer = Vec::with_capacity(length as usize);
-            libc::fread(buffer.as_mut_ptr() as *mut c_void, 1, length as usize, tmpfile);
+            libc::fread(
+                buffer.as_mut_ptr() as *mut c_void,
+                1,
+                length as usize,
+                tmpfile,
+            );
             libc::fclose(tmpfile);
             buffer.set_len(length as usize);
             String::from_utf8_unchecked(buffer)

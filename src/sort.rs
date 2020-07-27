@@ -2,8 +2,8 @@
 // have around for the future
 #![allow(dead_code)]
 
-use boolector_sys::*;
 use crate::btor::Btor;
+use boolector_sys::*;
 use std::borrow::Borrow;
 
 pub struct Sort<R: Borrow<Btor> + Clone> {
@@ -22,10 +22,7 @@ unsafe impl<R: Borrow<Btor> + Clone + Sync> Sync for Sort<R> {}
 
 impl<R: Borrow<Btor> + Clone> Sort<R> {
     pub(crate) fn from_raw(btor: R, sort: BoolectorSort) -> Self {
-        Self {
-            btor,
-            sort,
-        }
+        Self { btor, sort }
     }
 
     pub(crate) fn as_raw(&self) -> BoolectorSort {

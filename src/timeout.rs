@@ -43,7 +43,7 @@ impl TimeoutState {
 pub extern "C" fn callback(void_ptr_to_ts: *mut std::os::raw::c_void) -> i32 {
     let timeout_state = unsafe { &*(void_ptr_to_ts as *const TimeoutState) };
     match timeout_state.get_timeout_duration() {
-        None => 0,  // no timeout set, keep going
+        None => 0, // no timeout set, keep going
         Some(timeout_duration) => {
             let current_operation_start_time = timeout_state.get_current_operation_start_time();
             match Instant::now().checked_duration_since(current_operation_start_time) {
@@ -53,9 +53,9 @@ pub extern "C" fn callback(void_ptr_to_ts: *mut std::os::raw::c_void) -> i32 {
                 },
                 Some(duration) => {
                     if duration > timeout_duration {
-                        1  // terminate
+                        1 // terminate
                     } else {
-                        0  // keep going
+                        0 // keep going
                     }
                 },
             }
