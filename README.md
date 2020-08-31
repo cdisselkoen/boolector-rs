@@ -11,7 +11,7 @@ This crate is on [crates.io](https://crates.io/crates/boolector), so you can
 simply add it as a dependency in your `Cargo.toml`:
 ```toml
 [dependencies]
-boolector = "0.4.0"
+boolector = "0.4.1"
 ```
 
 This crate relies on the [`boolector-sys`] crate, so you will need to follow
