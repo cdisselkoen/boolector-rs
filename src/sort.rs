@@ -30,7 +30,9 @@ impl<R: Borrow<Btor> + Clone> Sort<R> {
     }
 
     /// Create a bitvector sort for the given bitwidth.
+    /// `width` must not be `0`.
     pub fn bitvector(btor: R, width: u32) -> Self {
+        assert!(width > 0, "boolector: cannot create 0-width bitvector sort");
         Self::from_raw(btor.clone(), unsafe {
             boolector_bitvec_sort(btor.borrow().as_raw(), width)
         })

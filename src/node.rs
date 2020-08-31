@@ -61,6 +61,8 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     /// The `symbol`, if present, will be used to identify the `BV` when printing
     /// a model or dumping to file. It must be unique if it is present.
     ///
+    /// `width` must not be 0.
+    ///
     /// # Example
     ///
     /// ```
@@ -115,7 +117,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` representing the given signed integer.
-    /// The new `BV` will have the width `width`.
+    /// The new `BV` will have the width `width`, which must not be 0.
     pub fn from_i32(btor: R, i: i32, width: u32) -> Self {
         let sort = Sort::bitvector(btor.clone(), width);
         Self {
@@ -125,7 +127,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` representing the given unsigned integer.
-    /// The new `BV` will have the width `width`.
+    /// The new `BV` will have the width `width`, which must not be 0.
     ///
     /// For a code example, see [`BV::new()`](struct.BV.html#method.new).
     pub fn from_u32(btor: R, u: u32, width: u32) -> Self {
@@ -137,7 +139,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` representing the given signed integer.
-    /// The new `BV` will have the width `width`.
+    /// The new `BV` will have the width `width`, which must not be 0.
     pub fn from_i64(btor: R, i: i64, width: u32) -> Self {
         let low_bits = (i & 0xFFFF_FFFF) as i32;
         let high_bits = (i >> 32) as i32;
@@ -157,7 +159,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` representing the given unsigned integer.
-    /// The new `BV` will have the width `width`.
+    /// The new `BV` will have the width `width`, which must not be 0.
     pub fn from_u64(btor: R, u: u64, width: u32) -> Self {
         let low_bits = (u & 0xFFFF_FFFF) as u32;
         let high_bits = (u >> 32) as u32;
@@ -253,7 +255,8 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` from the given string `num` representing a
-    /// (signed) decimal number. The new `BV` will have the width `width`.
+    /// (signed) decimal number. The new `BV` will have the width `width`, which
+    /// must not be 0.
     pub fn from_dec_str(btor: R, num: &str, width: u32) -> Self {
         let sort = Sort::bitvector(btor.clone(), width);
         let cstring = CString::new(num).unwrap();
@@ -270,7 +273,8 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     }
 
     /// Create a new constant `BV` from the given string `num` representing a
-    /// hexadecimal number. The new `BV` will have the width `width`.
+    /// hexadecimal number. The new `BV` will have the width `width`, which must
+    /// not be 0.
     pub fn from_hex_str(btor: R, num: &str, width: u32) -> Self {
         let sort = Sort::bitvector(btor.clone(), width);
         let cstring = CString::new(num).unwrap();
@@ -919,6 +923,8 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     /// assert_eq!(slice.get_width(), 4);
     /// assert_eq!(slice.as_binary_str().unwrap(), "0010");
     pub fn slice(&self, high: u32, low: u32) -> Self {
+        assert!(low <= high, "slice: low must be <= high; got low = {}, high = {}", low, high);
+        assert!(high < self.get_width(), "slice: high must be < width; got high = {}, width = {}", high, self.get_width());
         Self {
             btor: self.btor.clone(),
             node: unsafe { boolector_slice(self.btor.borrow().as_raw(), self.node, high, low) },
@@ -1006,6 +1012,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     /// assert_eq!(y.get_a_solution().as_u64().unwrap(), 1);
     /// ```
     pub fn cond_bv(&self, truebv: &Self, falsebv: &Self) -> Self {
+        assert_eq!(self.get_width(), 1, "cond_bv: self must have bitwidth 1; got {}", self.get_width());
         Self {
             btor: self.btor.clone(),
             node: unsafe {
@@ -1024,6 +1031,7 @@ impl<R: Borrow<Btor> + Clone> BV<R> {
     ///
     /// `self` must have bitwidth 1.
     pub fn cond_array(&self, true_array: &Array<R>, false_array: &Array<R>) -> Array<R> {
+        assert_eq!(self.get_width(), 1, "cond_array: self must have bitwidth 1; got {}", self.get_width());
         Array {
             btor: self.btor.clone(),
             node: unsafe {
@@ -1123,6 +1131,8 @@ impl<R: Borrow<Btor> + Clone> Array<R> {
     /// The `symbol`, if present, will be used to identify the `Array` when printing
     /// a model or dumping to file. It must be unique if it is present.
     ///
+    /// Both `index_width` and `element_width` must not be 0.
+    ///
     /// # Example
     ///
     /// ```
@@ -1168,6 +1178,8 @@ impl<R: Borrow<Btor> + Clone> Array<R> {
     /// Create a new `Array` which maps `BV`s of width `index_width` to `BV`s of
     /// width `element_width`. The `Array` will be initialized so that all
     /// indices map to the same constant value `val`.
+    ///
+    /// Both `index_width` and `element_width` must not be 0.
     ///
     /// # Example
     ///
