@@ -1,6 +1,6 @@
 [package]
 name = "boolector"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Craig Disselkoen <craigdissel@gmail.com>"]
 edition = "2018"
 description = "Safe high-level bindings for the Boolector SMT solver"
@@ -11,5 +11,8 @@ keywords = ["boolector", "smt", "ffi", "bindings"]
 license = "MIT"
 
 [dependencies]
-boolector-sys = "0.5.0"
+boolector-sys = "0.6.1"
 libc = "0.2.73"
+
+[features]
+vendor-lgl = ["boolector-sys/vendor-lgl"]

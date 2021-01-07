@@ -1,6 +1,6 @@
 // this ensures that crate users generating docs with --no-deps will still
 // properly get links to the public docs for boolector's types
-#![doc(html_root_url = "https://docs.rs/boolector/0.4.1")]
+#![doc(html_root_url = "https://docs.rs/boolector/0.4.2")]
 
 mod btor;
 pub use btor::{Btor, SolverResult};
