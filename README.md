@@ -1,7 +1,7 @@
 # boolector
 
-[![Crates.io](https://img.shields.io/crates/v/boolector.svg)](https://crates.io/crates/boolector)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/cdisselkoen/boolector-rs/master/LICENSE)
+[![crates.io](https://img.shields.io/crates/v/boolector.svg)](https://crates.io/crates/boolector)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/cdisselkoen/boolector-rs/main/LICENSE)
 
 Safe high-level bindings for the [Boolector] SMT solver, version 3.2.1.
 
