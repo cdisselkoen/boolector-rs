@@ -11,7 +11,7 @@ keywords = ["boolector", "smt", "ffi", "bindings"]
 license = "MIT"
 
 [dependencies]
-boolector-sys = "0.6.1"
+boolector-sys = "0.7.1"
 libc = "0.2.73"
 
 [features]
